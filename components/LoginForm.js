@@ -1,0 +1,200 @@
+import React, { useCallback, useEffect } from 'react';
+import { Formik, Form, Field } from "formik";
+import * as Yup from "yup";
+import { Input, Button, Typography, Row, Col } from "antd";
+import Link from "next/link";
+import { useDispatch, useSelector } from "react-redux";
+import useInput from '../hooks/useInput';
+import { logIn } from "../reducers/user";
+import { useMemo } from 'react';
+
+const { Title, Text } = Typography;
+
+const LoginForm = () => {
+  const dispatch = useDispatch();
+  const { logInLoading, logInError } = useSelector((state) => state.user);
+  const [email, onChangeEmail] = useInput('');
+  const [password, onChangePassword] = useInput('');
+
+  useEffect(() => {
+    if (logInError) {
+      alert(logInError);
+    }
+  }, [logInError]);
+
+  // Yup 스키마를 useMemo로 메모이제이션
+  const validationSchema = useMemo(
+    () =>
+      Yup.object().shape({
+        email: Yup.string().email("유효한 이메일을 입력하세요.").required("이메일은 필수입니다."),
+        password: Yup.string()
+          .min(6, "비밀번호는 최소 6자 이상이어야 합니다.")
+          .required("비밀번호는 필수입니다."),
+      }),
+    []
+  );
+
+  // 폼의 초기값을 useMemo로 메모이제이션
+  const initialValues = useMemo(() => ({ email: "", password: "" }), []);
+
+  // 폼 제출 핸들러를 useCallback으로 정의
+  const onSubmitForm = useCallback((values, { setSubmitting }) => {
+    console.log("Form Values: ", values);
+    dispatch(logIn({ email: values.email, password: values.password }));
+    setSubmitting(false); // 제출 완료 후 로딩 상태 비활성화
+  }, [dispatch]);
+
+  return (
+    <Row justify="center" style={{ marginTop: "50px" }}>
+      <Col xs={22} sm={18} md={12} lg={8}>
+        <Title level={3} style={{ textAlign: "center", marginBottom: "20px" }}>로그인</Title>
+
+        <Formik
+          initialValues={initialValues}
+          validationSchema={validationSchema}
+          onSubmit={onSubmitForm} // onSubmit 핸들러 설정
+        >
+          {({ isSubmitting, errors, touched }) => (
+            <Form style={{ background: "#fff", padding: "30px", borderRadius: "10px", boxShadow: "0 4px 8px rgba(0,0,0,0.1)" }}>
+              <div style={{ marginBottom: "16px" }}>
+                <label htmlFor="email">이메일</label>
+                <Field name="email" as={Input} placeholder="이메일을 입력하세요" />
+                {errors.email && touched.email && (
+                  <Text type="danger" style={{ display: "block", marginTop: "8px" }}>{errors.email}</Text>
+                )}
+              </div>
+              <div style={{ marginBottom: "16px" }}>
+                <label htmlFor="password">패스워드</label>
+                <Field
+                  name="password"
+                  as={Input.Password}
+                  placeholder="비밀번호를 입력하세요"
+                />
+                {errors.password && touched.password && (
+                  <Text type="danger" style={{ display: "block", marginTop: "8px" }}>{errors.password}</Text>
+                )}
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "20px" }}>
+                <Button type="primary" htmlType="submit" loading={isSubmitting || logInLoading} block>
+                  로그인
+                </Button>
+                <Link href="/signup"><Button>회원가입</Button></Link>
+              </div>
+            </Form>
+          )}
+        </Formik>
+      </Col>
+    </Row>
+  );
+};
+
+export default LoginForm;
+
+
+/*import { Formik, Form, Field } from "formik";
+import * as Yup from "yup";
+import { Input, Button } from "antd";
+import Link from "next/link";
+import { useMemo } from "react";
+import { useDispatch } from "react-redux";
+import { logIn } from '../reducers/user';
+
+const LoginForm = () => {
+  const dispatch = useDispatch();
+  // Yup 스키마를 useMemo로 메모이제이션
+  const validationSchema = useMemo(
+    () =>
+      Yup.object().shape({
+        id: Yup.string().required("아이디는 필수입니다."),
+        password: Yup.string()
+          .min(6, "비밀번호는 최소 6자 이상이어야 합니다.")
+          .required("비밀번호는 필수입니다."),
+      }),
+    []
+  );
+
+  // 폼의 초기값을 useMemo로 메모이제이션
+  const initialValues = useMemo(() => ({ id: "", password: "" }), []);
+
+  // 스타일을 useMemo로 메모이제이션
+  const styles = useMemo(
+    () => ({
+      formContainer: { maxWidth: "400px", margin: "0 auto" },
+      inputContainer: { marginBottom: "16px" },
+      errorText: { color: "red", marginTop: "8px" },
+      buttonContainer: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+      },
+    }),
+    []
+  );
+
+  // 폼 제출 핸들러
+  const handleSubmit = (values, { setSubmitting }) => {
+    console.log("Form Values: ", values);
+
+    // 로그인 성공 가정: 로그인 상태 변경
+    setTimeout(() => {
+      if (values.id === "test" && values.password === "123456") {
+        // 로그인 성공
+        setIsLogged(true); // 로그인 상태 변경
+      } else {
+        alert("아이디 또는 비밀번호가 잘못되었습니다.");
+      }
+      setSubmitting(false); // 제출 완료 후 로딩 상태 비활성화
+    }, 1000);
+  };
+
+  return (
+    <>
+    <h1 style={{ marginLeft: "450px" }}>로그인</h1>      
+
+    <Formik
+      initialValues={initialValues}
+      validationSchema={validationSchema}
+      onSubmit={handleSubmit}
+    >
+      {({ isSubmitting, errors, touched }) => (
+        <Form style={styles.formContainer}>
+          <div style={styles.inputContainer}>
+            <label htmlFor="id">아이디</label>
+            <Field name="id" as={Input} placeholder="아이디를 입력하세요" />
+            {errors.id && touched.id && (
+              <div style={styles.errorText}>{errors.id}</div>
+            )}
+          </div>
+          <div style={styles.inputContainer}>
+            <label htmlFor="password">패스워드</label>
+            <Field
+              name="password"
+              as={Input.Password}
+              placeholder="비밀번호를 입력하세요"
+            />
+            {errors.password && touched.password && (
+              <div style={styles.errorText}>{errors.password}</div>
+            )}
+          </div>
+          <div style={styles.buttonContainer}>
+            <Button type="primary" htmlType="submit" loading={isSubmitting}>
+              로그인
+            </Button>
+            <div>
+              
+                아직 회원이 아니신가요?{" "}
+                <Link href="/signup">
+                  회원가입
+                </Link>
+              
+            </div>
+          </div>
+        </Form>
+      )}
+    </Formik>
+    </>
+  );
+};
+
+export default LoginForm;
+*/
