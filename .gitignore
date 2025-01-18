@@ -1,1 +1,26 @@
+# Node.js dependencies
 node_modules
+
+# Next.js build output
+.next
+
+# Logs
+logs
+*.log
+
+# Runtime data
+*.pid
+*.pid.lock
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE-specific files
+.idea
+.vscode
