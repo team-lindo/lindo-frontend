@@ -5,11 +5,11 @@ const fakeApi = {
   me: async (data) => ({
     data: {
       id: 1,
-      nickname: data.nickname,
-      email: data.email,
-      Posts: [{id: 1}],
-      Followings: [{nickname:'설이'},{nickname:'삼색이'},{nickname:'까미'}],
-      Followers: [{nickname:'설이'},{nickname:'삼색이'},{nickname:'까미'}],
+      nickname: "",
+      email: "",
+      Posts: [],
+      Followers: [],
+      Followings: [],
     },
   }),
   //사용자가 로그인 요청을 할 때 호출되는 API
@@ -163,6 +163,8 @@ const userSlice = createSlice({
         draft.logInDone = false;
       })
       .addCase(logIn.fulfilled, (draft, action) => {
+        console.log("Payload from API:", action.payload); // 디버깅용 로그 추가
+
         draft.logInLoading = false;
         draft.me = action.payload;
         draft.isLoggedIn = true;

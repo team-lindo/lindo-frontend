@@ -1,14 +1,13 @@
-import React from 'react';
+
+
 import PropTypes from 'prop-types';
 import Head from 'next/head';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
-import wrapper from '../store/configureStore';
-// store.js에서 wrapper 가져오기
+import { wrapper } from '../store/configureStore';
 
 function MyApp({ Component, ...rest }) {
-  const { store, props } = wrapper.useWrappedStore(rest);
-  const { pageProps } = props;
+  const { store } = wrapper.useWrappedStore(rest);
 
   return (
     <Provider store={store}>
@@ -22,7 +21,7 @@ function MyApp({ Component, ...rest }) {
           <meta httpEquiv="X-UA-Compatible" content="ie=edge" />
           <title>NodeBird</title>
         </Head>
-        <Component {...pageProps} />
+        <Component {...rest.pageProps} />
       </PersistGate>
     </Provider>
   );
@@ -35,8 +34,8 @@ MyApp.propTypes = {
 
 export default wrapper.withRedux(MyApp);
 
-
-/*import React from 'react';
+/*
+import React from 'react';
 import PropTypes from 'prop-types';
 import Head from 'next/head';
 
@@ -68,8 +67,8 @@ export function reportWebVitals(metric) {
 
 export default NodeBird;
 */
-/*
-import React from 'react';
+
+/*import React from 'react';
 import PropTypes from 'prop-types';
 import Head from 'next/head';
 import { Provider } from 'react-redux';
