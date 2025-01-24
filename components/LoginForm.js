@@ -58,7 +58,7 @@ const LoginForm = () => {
             <Form style={{ background: "#fff", padding: "30px", borderRadius: "10px", boxShadow: "0 4px 8px rgba(0,0,0,0.1)" }}>
               <div style={{ marginBottom: "16px" }}>
                 <label htmlFor="email">이메일</label>
-                <Field name="email" as={Input} placeholder="이메일을 입력하세요" />
+                <Field name="email" type = "email" as={Input} placeholder="이메일을 입력하세요" />
                 {errors.email && touched.email && (
                   <Text type="danger" style={{ display: "block", marginTop: "8px" }}>{errors.email}</Text>
                 )}
@@ -75,7 +75,7 @@ const LoginForm = () => {
                 )}
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "20px" }}>
-                <Button type="primary" htmlType="submit" loading={isSubmitting || logInLoading} block>
+                <Button type="primary" htmlType="submit" loading={ logInLoading} block>
                   로그인
                 </Button>
                 <Link href="/signup"><Button>회원가입</Button></Link>

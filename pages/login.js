@@ -5,7 +5,8 @@ import LoginForm from "../components/LoginForm";
 import { useSelector } from "react-redux";
 
 const Login = () => {
-  const isLogged = useSelector((state) => state.user.isLoggedIn);
+ // const isLogged = useSelector((state) => state.user.isLoggedIn);
+ const { me } = useSelector((state) => state.user);
 
   return (
     <>
@@ -14,7 +15,7 @@ const Login = () => {
         <meta name="description" content="로그인 페이지입니다." />
       </Head>
       <AppLayout>
-        {isLogged ? <UserProfile /> : <LoginForm />}
+        {me ? <UserProfile /> : <LoginForm />}
       </AppLayout>
     </>
   );

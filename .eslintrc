@@ -18,5 +18,15 @@
     "plugins": [
         "import",
         "react-hooks"
-    ]
+    ],
+    "settings": {
+      "react": {
+        "version": "detect" // React 버전을 자동 감지
+      }
+    },
+    "rules": {
+      // 필요한 규칙 추가
+      "react/react-in-jsx-scope": "off", // Next.js에서는 React 자동 import
+      "react/prop-types": "off" // PropTypes 사용 여부에 따라 조정
+    }
 }

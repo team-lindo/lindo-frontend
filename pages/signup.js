@@ -2,20 +2,24 @@ import AppLayout from "../components/AppLayout";
 import Head from "next/head";
 import { Checkbox, Form, Input, Button, Row, Col, Typography } from "antd";
 import { useCallback, useState } from "react";
-import useInput from "../hooks/useinput";
+import useInput from "../hooks/useInput";
 import dynamic from "next/dynamic";
+import { signup, loadMyInfo } from '../reducers/user';
+import { useDispatch, useSelector } from "react-redux";
 
 const { Title, Text } = Typography;
 
 const Signup = () => {
-  const [id, onChangeId] = useInput('');
+  const [email, onChangeEmail] = useInput('');
+  //const [email, onChangeId] = useInput('');
   const [nickname, onChangeNickname] = useInput("");
   const [password, onChangePassword] = useInput("");
   const [passwordCheck, setPasswordCheck] = useState("");
   const [passwordError, setPasswordError] = useState(false);
   const [term, setTerm] = useState(false);
   const [termError, setTermError] = useState(false);
-
+  const dispatch = useDispatch();
+  const {signUpLoading} =useSelector((state)=>state.user);
   const onChangePasswordCheck = useCallback(
     (e) => {
       setPasswordCheck(e.target.value);
@@ -38,8 +42,9 @@ const Signup = () => {
       setTermError(true);
       return;
     }
-    console.log(id, nickname, password);
-  }, [id, nickname, password, passwordCheck, term]);
+    console.log(email, nickname, password);
+    return dispatch(signup({ email, password, nickname }));
+  }, [email, nickname, password, passwordCheck, term]);
 
   return (
     <AppLayout>
@@ -56,11 +61,12 @@ const Signup = () => {
             <Title level={3} style={{ textAlign: "center", marginBottom: "20px" }}>회원가입</Title>
 
             <Form.Item
-              label="아이디"
-              name="user_id"
+              label="이메일"
+              type = "email"
+              name="user_email"
               rules={[{ required: true, message: "아이디를 입력해주세요." }]}
             >
-              <Input value={id} onChange={onChangeId} placeholder="아이디를 입력하세요" />
+              <Input value={email} onChange={onChangeEmail} placeholder="아이디를 입력하세요" />
             </Form.Item>
 
             <Form.Item
@@ -110,6 +116,7 @@ const Signup = () => {
                 htmlType="submit"
                 block
                 disabled={!term || passwordError}
+                loading = {signUpLoading}
               >
                 가입하기
               </Button>

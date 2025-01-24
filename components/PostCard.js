@@ -23,6 +23,14 @@ import FollowButton from './FollowButton';
 moment.locale('ko');
 
 function PostCard({ post }) {
+  console.log('Post Data:', post); // Redux에서 전달된 데이터 확인
+
+  const postData = typeof post.description === 'string' 
+  ? post.description 
+  : typeof post.content === 'string'
+  ? post.content 
+  : '내용 없음';
+
   const dispatch = useDispatch();
   const { removePostLoading } = useSelector((state) => state.post);
   const [commentFormOpened, setCommentFormOpened] = useState(false);
@@ -76,6 +84,7 @@ function PostCard({ post }) {
 
   const liked = post.Likers?.find((v) => v.id === id) || false;
   return (
+
     <div style={{ marginBottom: 20 }}>
       <Card
         cover={post.Images[0] && <PostImages images={post.Images} />}
@@ -135,7 +144,7 @@ function PostCard({ post }) {
                   </Link>
                 )}
                 title={post.User.nickname}
-                description={<PostCardContent editMode={editMode} onChangePost={onChangePost} onCancelUpdate={onCancelUpdate} postData={post.content} />}
+                description={<PostCardContent  postData={postData} editMode={editMode} onChangePost={onChangePost} onCancelUpdate={onCancelUpdate}   />}
               />
             </>
           )}
@@ -167,12 +176,13 @@ function PostCard({ post }) {
         </div>
       )}
     </div>
+  
   );
 }
 
 PostCard.propTypes = {
   post: PropTypes.shape({
-    id: PropTypes.number,
+    id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]), // string과 number 모두 허용
     User: PropTypes.object,
     content: PropTypes.string,
     createdAt: PropTypes.string,

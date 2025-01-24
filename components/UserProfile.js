@@ -1,5 +1,5 @@
 import { Avatar, Button, Card } from "antd";
-import { useCallback, useEffect, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/router";
 
@@ -11,14 +11,19 @@ const UserProfile = () => {
 
   const { me, logOutLoading } = useSelector((state) => state.user);
 
-  useEffect(() => {
+  /*useEffect(() => {
     dispatch(
       logIn({
         nickname: "test",
         email: "test@example.com",
+        Posts: [], // 게시물 초기화
+        Followers: [],
+        Followings: [],
       })
-    );
-  }, [dispatch]);
+    );    
+
+  }, [dispatch]);*/
+
 
   const onLogOut = useCallback(() => {
     dispatch(setLogOutLoading(true)); // 로그아웃 로딩 상태 활성화
@@ -41,9 +46,9 @@ const UserProfile = () => {
     <Card
       style={styles.cardContainer}
       actions={[
-        <div key="post">게시물 <br /> 0 </div>,
-        <div key="follower">팔로워 <br /> 0 </div>,
-        <div key="following">팔로잉 <br /> 0 </div>,
+        <div key="post">게시물 <br /> {me?.Posts?.length || 0}</div>,
+        <div key="follower">팔로워 <br />{me.Followers.length}</div>,
+        <div key="following">팔로잉 <br /> {me.Followings.length} </div>,
       ]}
     >
       <Card.Meta

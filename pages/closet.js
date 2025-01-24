@@ -4,20 +4,24 @@ import PropTypes from "prop-types";
 import AppLayout from "../components/AppLayout";
 import Head from "next/head";
 import ImageSlider from "../components/ImageSlider";
-import { useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Form, Input, Button, Select, Typography, Row, Col, Upload } from "antd";
 import ImgCrop from "antd-img-crop";
 import { updateProduct } from "../reducers/product";
-
 const { Title } = Typography;
 const { Option } = Select;
+import useInput from '../hooks/useInput';
+import { addPostToMe } from "../reducers/user";
+import postSlice, {addPostDone, addPost, uploadImage } from '../reducers/post';
+import shortId from 'shortid';
 
 const Closet = ({ addItem }) => {
   const dispatch = useDispatch();
-  const { product } = useSelector((state) => state.product);
-  const user = useSelector((state) => state.user.user); // 로그인한 사용자 정보 가져오기
+  const { me } = useSelector((state) => state.user);
   const router = useRouter();
+  const product = useSelector((state) => state.product.product);
 
+  const [text, onChangeText, setText] = useInput('');
   const [fileList, setFileList] = useState([
     {
       uid: "-1",
@@ -26,27 +30,64 @@ const Closet = ({ addItem }) => {
       url: "https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png",
     },
   ]);
+  const [newPost, setNewPost] = useState(null);
 
+  useEffect(() => {
+    if (!me || !me.Posts) {
+      console.error('사용자 정보가 없습니다. 로그인이 필요합니다.');
+      return;
+    }
+    if (addPostDone&& newPost) {
+      console.log('게시물 추가 완료');
+      dispatch(addPostToMe(newPost.id)); // me가 있을 때만 호출
+      dispatch(resetAddPostDone());
+    }
+  }, [addPostDone, dispatch, setText, me, newPost]);
+
+  
   const handleSubmit = async (values) => {
+    const id = shortId.generate();
+
+    console.log('Form Values:', values); // 디버깅
+
+    if (!values.description.trim()) {
+      return alert("설명을 입력하세요!");
+    }
     if (!values.productName.trim()) {
       return alert("상품 이름을 입력하세요!");
     }
 
-    const body = {
-      writer: user?.id || "unknown",
-      ...values,
+    const Post = {
+      id,
+      description: values.description,
+      productName: values.productName,
+      category: values.category,
+      brand: values.brand,
+      price: values.price,
+      size: values.size,
+      site: values.site,
+      writer: me?.id || 'unknown',
       images: fileList.map((file) => file.url || file.response?.url),
     };
 
-    try {
-      console.log("Submitting product:", body);
-      if (addItem) {
-        addItem(product.category, product.productName);
-      }
-      router.push("/");
-    } catch (error) {
-      console.error("상품 업로드 실패:", error);
-    }
+    console.log('New Post:', Post); // 디버깅
+  /*  dispatch(addPost(Post));
+    dispatch(addPostToMe(Post.id)); // 게시물을 사용자 정보에 추가
+    // addPost 및 addPostToMe 동시 디스패치
+   */
+    const result = await dispatch(addPost({ id, text: Post }));
+
+    if (result.meta.requestStatus === 'fulfilled') {
+      console.log('addPost 성공');
+      dispatch(addPostToMe(Post.id)); // addPost 성공 시에만 addPostToMe 호출
+      console.log("addPostToMe payload:", Post.id); // Post.id 직접 출력
+
+      router.push('/'); // 성공적으로 완료된 후 이동
+    } else {
+      console.error('addPost 실패:', result.error.message);
+      alert('게시물 추가 중 오류가 발생했습니다.');
+    }   
+
   };
 
   const onChange = ({ fileList: newFileList }) => {
@@ -84,7 +125,10 @@ const Closet = ({ addItem }) => {
               <Form
                 layout="vertical"
                 initialValues={product}
-                onFinish={handleSubmit}
+                onFinish={(values) => {
+                  console.log('Form Data Submitted:', values); // 입력 데이터 확인
+                  handleSubmit(values); 
+                }}             
               >
                 {/* 이미지 업로드 */}
                 <Form.Item label="이미지 업로드">
@@ -199,9 +243,14 @@ const Closet = ({ addItem }) => {
                   <Input.TextArea
                     placeholder="설명을 입력하세요"
                     rows={4}
-                    onChange={(e) =>
-                      dispatch(updateProduct({ description: e.target.value }))
-                    }
+                    onChange={(e) => {
+                      const formData = new FormData();
+                      formData.append('description', e.target.value);
+                      console.log('FormData Description:', formData.get('description'));
+                      console.log('FormData Description:', e.target.value); // 실시간 값 확인
+
+                      dispatch(updateProduct({ description: e.target.value }));
+                    }}
                   />
                 </Form.Item>
 
@@ -220,13 +269,8 @@ const Closet = ({ addItem }) => {
   );
 };
 
-// PropTypes 정의
 Closet.propTypes = {
-  addItem: PropTypes.func.isRequired, // addItem은 필수 함수형 prop
+  addItem: PropTypes.func, // 필수 조건 제거
 };
 
-export default Closet;
-
-
-
-
+export default Closet; 

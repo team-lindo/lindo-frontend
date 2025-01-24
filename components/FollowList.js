@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import { StopOutlined } from "@ant-design/icons";
 import { useMemo } from "react";
 
-const FollowList = ({ header, data }) => {
+const FollowList = ({ header, data = []  }) => {
   const styles = useMemo(
     () => ({
       list: { marginBottom: 20 },
@@ -42,9 +42,7 @@ const FollowList = ({ header, data }) => {
   );
 };
 
-FollowList.defaultProps = {
-  data: [],
-};
+
 
 FollowList.propTypes = {
   header: PropTypes.string.isRequired,

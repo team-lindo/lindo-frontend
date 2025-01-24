@@ -4,16 +4,14 @@ import { Input, Space } from "antd";
 import Link from "next/link";
 import { LeftOutlined } from '@ant-design/icons';
 const onSearch = (value, _e, info) => console.log(info?.source, value);
-//const { Search } = Input;
+const { Search } = Input;
 
-const Search = () => {
+const SearchPage = () => {
   return (
     <>
       <Head>
         <title>search</title>
       </Head>
-
-      {/* 검색창 컨테이너 */}
       <div
         style={{
           display: "flex",
@@ -25,23 +23,11 @@ const Search = () => {
         }}
       >
         {/* 아이콘 */}
-        <Link href="/">
-          <a style={{ display: "flex", alignItems: "center" }}>
-            <LeftOutlined style={{ fontSize: "20px" }} />
-          </a>
+        <Link href="/" style={{ display: "flex", alignItems: "center" }}>
+          <LeftOutlined style={{ fontSize: "20px" }} />
         </Link>
 
-        {/* 검색창 */}
-        <Space direction="vertical">
-            <Search
-            placeholder="input search text"
-            onSearch={onSearch}
-            style={{
-                width: 200,
-            }}
-            />
-        
-        </Space>
+
         <Input.Search
           placeholder="검색어를 입력해주세요."
           style={{
@@ -55,4 +41,4 @@ const Search = () => {
   );
 };
 
-export default Search;
+export default SearchPage;

@@ -5,19 +5,21 @@ import { useForm } from 'react-hook-form';
 import { Form, Input, Button } from 'antd';
 
 import { addComment } from '../reducers/post';
+import useInput from '../hooks/useInput';
 
 const CommentForm = ({ post }) => {
   const dispatch = useDispatch();
   const id = useSelector((state) => state.user.me?.id);
   const { addCommentDone, addCommentLoading } = useSelector((state) => state.post);
-
-  const { register, handleSubmit, reset, setValue } = useForm();
+  const [commentText, onChangeCommentText, setCommentText] = useInput('');
+  const { register, handleSubmit , setValue, reset  } = useForm();
 
   useEffect(() => {
     if (addCommentDone) {
-      reset(); // 폼 필드 초기화
+      setCommentText('');
+      reset({ commentText: '' }); 
     }
-  }, [addCommentDone, reset]);
+  }, [addCommentDone, setCommentText, reset]);
 
   const onSubmit = (data) => {
     dispatch(
@@ -25,7 +27,8 @@ const CommentForm = ({ post }) => {
         content: data.commentText,
         postId: post.id,
         userId: id,
-      })
+      }, [commentText, id]
+    )
     );
   };
 
@@ -45,6 +48,8 @@ const CommentForm = ({ post }) => {
         <Input.TextArea
           rows={4}
           placeholder="댓글을 입력하세요"
+          value={commentText} 
+          onChange={onChangeCommentText}
           {...registerInput('commentText', { required: true })}
         />
       </Form.Item>
