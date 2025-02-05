@@ -19,11 +19,12 @@ import {
   updatePost,
 } from '../reducers/post';
 import FollowButton from './FollowButton';
+import { removePostOfMe } from '../reducers/user';
 
 moment.locale('ko');
 
 function PostCard({ post }) {
-  console.log('Post Data:', post); // Redux에서 전달된 데이터 확인
+  //console.log('Post Data:', post); // Redux에서 전달된 데이터 확인
 
   const postData = typeof post.description === 'string' 
   ? post.description 
@@ -35,6 +36,8 @@ function PostCard({ post }) {
   const { removePostLoading } = useSelector((state) => state.post);
   const [commentFormOpened, setCommentFormOpened] = useState(false);
   const id = useSelector((state) => state.user.me?.id);
+  //console.log("현재 로그인한 사용자 ID:", id);
+
   const [editMode, setEditMode] = useState(false);
 
   const onClickUpdate = useCallback(() => {
@@ -68,14 +71,32 @@ function PostCard({ post }) {
     setCommentFormOpened((prev) => !prev);
   }, []);
 
-  const onRemovePost = useCallback(() => {
+ /* const onRemovePost = useCallback(() => {
     if (!id) {
       return alert('로그인이 필요합니다.');
     }
     return dispatch(removePost(post.id));
   }, [id]);
+*/
+const onRemovePost = useCallback(
+  (postId) => {
+    if (!id) {
+      return alert('로그인이 필요합니다.');
+    }
 
-  const onRetweet = useCallback(() => {
+    // 게시물 삭제 액션 호출
+    dispatch(removePost(postId))
+      .then(() => {
+        // 삭제 성공 시 유저 상태 업데이트
+        dispatch(removePostOfMe(postId));
+      })
+      .catch((err) => {
+        console.error('Failed to remove post:', err);
+      });
+  },
+  [id, dispatch]
+);
+const onRetweet = useCallback(() => {
     if (!id) {
       return alert('로그인이 필요합니다.');
     }
@@ -104,7 +125,7 @@ function PostCard({ post }) {
                   ? (
                     <>
                       {!post.RetweetId && <Button onClick={onClickUpdate}>수정</Button>}
-                      <Button type="danger" loading={removePostLoading} onClick={onRemovePost}>삭제</Button>
+                      <Button type="danger" loading={removePostLoading}  onClick={() => onRemovePost(post.id)}>삭제</Button>
                     </>
                   )
                   : <Button>신고</Button>}
@@ -115,12 +136,14 @@ function PostCard({ post }) {
           </Popover>,
         ]}
         title={post.RetweetId ? `${post.User.nickname}님이 리트윗하셨습니다.` : null}
+        //로그인했을 때 버튼 보이게
         extra={id && <FollowButton post={post} />}
       >
         {post.RetweetId && post.Retweet
           ? (
             <Card
               cover={post.Retweet.Images[0] && <PostImages images={post.Retweet.Images} />}
+           
             >
               <div style={{ float: 'right' }}>{moment(post.createdAt).format('YYYY.MM.DD')}</div>
               <Card.Meta
@@ -155,10 +178,9 @@ function PostCard({ post }) {
             {/*어떤 게시글에 댓글을 달지에 대한 정보가 필요함-> 게시글의 id를 받기 위해 CommentForm이 post를 받아야함*/}
           <CommentForm post={post} />
           <List
-            header={`${post.Comments.length}개의 댓글`}
-            itemLayout="horizontal"
-            dataSource={post.Comments}
-            renderItem={(item) => (
+             header={`${post.Comments?.length || 0}개의 댓글`}            itemLayout="horizontal"
+             dataSource={Array.isArray(post.Comments) ? post.Comments : []} // Comments가 배열이 아닐 경우 빈 배열로 처리
+             renderItem={(item) => (
               <li>
                 {/*post의 Comments각각이 item이 됨*/}
                 <Comment

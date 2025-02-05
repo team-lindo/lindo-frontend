@@ -1,72 +1,82 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { HYDRATE } from 'next-redux-wrapper';
 const fakeApi = {
-  //현재 로그인한 사용자의 정보를 가져오기 위한 API
-  me: async (data) => ({
+  me: async () => ({
     data: {
       id: 1,
-      nickname: "",
-      email: "",
-      Posts: [],
-      Followers: [],
-      Followings: [],
+      nickname: "test",
+      email: "test@example.com",
+      Posts: [
+        { id: 1, content: { description: "첫 번째 게시물 #츄르 #닭가슴살" } },
+      ],
+      Followings: [
+        { id: 2, nickname: "설이", content: { description: "설이의 게시물 #츄르 #닭가슴살" } },
+        { id: 3, nickname: "삼색이", content: { description: "삼색이의 게시물 #츄르 #닭가슴살" } },
+        { id: 4, nickname: "까미", content: { description: "까미의 게시물 #츄르 #닭가슴살" } },
+      ],
+      Followers: [
+        { id: 2, nickname: "설이" },
+        { id: 3, nickname: "삼색이" },
+        { id: 4, nickname: "까미" },
+      ],
     },
   }),
-  //사용자가 로그인 요청을 할 때 호출되는 API
-  login: async (loginData) => ({
-    data: {
-      id: 1,
-      nickname: loginData.nickname,
-      email: loginData.email,
-      Posts: [ {id:1}],
-      Followings: [{nickname:'설이'},{nickname:'삼색이'},{nickname:'까미'}],
-      Followers: [{nickname:'설이'},{nickname:'삼색이'},{nickname:'까미'}],
-    },
-  }),
+  
+  login: async (loginData) => {
+    //console.log("로그인 요청:", loginData);
+    return await fakeApi.me(); // ✅ `me` API를 반환하여 데이터 일관성 유지
+  },
+
   logout: async () => null,
   follow: async (id) => ({ data: { UserId: id } }),
   unfollow: async (id) => null,
   signup: async (data) => ({ data: { id: 1, name: 'New User' } }),
+  changeNickname: async (data) => ({
+    data: { nickname: data.nickname },
+  }),
 };
 
 const initialState = {
   isLoggedIn: false,
-  me: {
+  /*me: {
     nickname: "",
     email: "",
     Posts: [],
     Followers: [],
     Followings: [],
-  },
-  logInLoading: false,
+  },*/
+  me: null, 
+   // 전체 게시물 저장
+  posts: [
+    { id: 1, User: { id: 2, nickname: "설이" }, content: "설이의 게시물" },
+    { id: 2, User: { id: 3, nickname: "삼색이" }, content: "삼색이의 게시물" },
+    { id: 3, User: { id: 4, nickname: "까미" }, content: "까미의 게시물" },
+  ],
+  logInLoading: false,//로그인 시도중
   logInDone: false,
   logInError: null,
-  logOutLoading: false,
+  logOutLoading: false,//로그아웃 시도중
   logOutDone: false,
   logOutError: null,
-  signUpLoading: false,
+  signUpLoading: false,//회원가입 시도중
   signUpDone: false,
   signUpError: null,
-  followLoading: false,
+  followLoading: false,//팔로우 시도중
   followDone: false,
   followError: null,
-  unfollowLoading: false,
+  unfollowLoading: false,//언언팔로우 시도중
   unfollowDone: false,
   unfollowError: null,
   changeNicknameLoading: false,
   changeNicknameDone: false,
   changeNicknameError: null,
-  updatePostLoading: false,
-  updatePostDone: false,
-  updatePostError: null,
-  removePostLoading: false,
-  removePostDone: false,
-  removePostError: null,
+
 };
 
 export const logIn = createAsyncThunk('user/logIn', async (loginData, thunkAPI) => {
   try {
     const response = await fakeApi.login(loginData);
+    console.log("로그인 API 응답:", response.data); 
     return response.data;
   } catch (error) {
     return thunkAPI.rejectWithValue(error.message);
@@ -113,15 +123,7 @@ export const changeNickname = createAsyncThunk('user/changeNickname', async (dat
   const response = await fakeApi.changeNickname(data);
   return response.data;
 });
-export const updatePost = createAsyncThunk('post/updatePost', async (data) => {
-  const response = await fakeApi.updatePost(data);
-  return response.data;
-});
 
-export const removePost = createAsyncThunk('post/removePost', async (data) => {
-  const response = await fakeApi.removePost(data);
-  return response.data;
-});
 
 
 const userSlice = createSlice({
@@ -139,15 +141,18 @@ const userSlice = createSlice({
         draft.me.Posts = []; // Posts가 없으면 초기화
       }
      // draft.me.Posts = [...draft.me.Posts, { id: action.payload }];
-     console.log('Before Update:', [...draft.me.Posts]); // 상태 변경 전 디버깅
-     draft.me.Posts.unshift({ id: action.payload });
-     console.log('After Update:', [...draft.me.Posts]); // 상태 변경 후 디버깅
+     //console.log('Before Update:', [...draft.me.Posts]); // 상태 변경 전 디버깅
+     draft.me.Posts.unshift({ id: action.payload, content: action.payload.content  });
+     //console.log('After Update:', [...draft.me.Posts]); // 상태 변경 후 디버깅
     },
     //자기 게시물 삭제
     removePostOfMe(draft, action) {
       draft.me.Posts = draft.me.Posts.filter((v) => v.id !== action.payload);
     },
-
+    // 전체 게시물 업데이트
+    setPosts(draft, action) {
+      draft.posts = action.payload; 
+    }
   },
   extraReducers: (builder) => {
     builder
@@ -183,6 +188,7 @@ const userSlice = createSlice({
         draft.logOutLoading = false;
         draft.isLoggedIn = false;
         draft.me = null;
+        //draft.me = { nickname: "", email: "", Posts: [], Followers: [], Followings: [] };
         draft.logOutDone = true;
       })
       .addCase(logOut.rejected, (draft, action) => {
@@ -240,7 +246,7 @@ const userSlice = createSlice({
         draft.changeNicknameDone = false;
       })
       .addCase(changeNickname.fulfilled, (draft, action) => {
-        if (draft.me) {
+        if (draft.me && action.payload?.nickname) {
           draft.me.nickname = action.payload.nickname;
         }
         draft.changeNicknameLoading = false;
@@ -250,37 +256,10 @@ const userSlice = createSlice({
         draft.changeNicknameLoading = false;
         draft.changeNicknameError = action.payload;
       })
-      .addCase(updatePost.pending, (draft, action) => {
-        draft.updatePostLoading = true;
-        draft.updatePostDone = false;
-        draft.updatePostError = null;
-      })
-      .addCase(updatePost.fulfilled, (draft, action) => {
-        draft.updatePostLoading = false;
-        draft.updatePostDone = true;
-        draft.mainPosts.find((v) => v.id === action.payload.PostId).content = action.payload.content;
-      })
-      .addCase(updatePost.rejected, (draft, action) => {
-        draft.updatePostLoading = false;
-        draft.updatePostError = action.error;
-      })
-      .addCase(removePost.pending, (draft, action) => {
-        draft.removePostLoading = true;
-        draft.removePostDone = false;
-        draft.removePostError = null;
-      })
-      .addCase(removePost.fulfilled, (draft, action) => {
-        draft.removePostLoading = false;
-        draft.removePostDone = true;
-        draft.mainPosts = draft.mainPosts.filter((v) => v.id !== action.payload.PostId);
-      })
-      .addCase(removePost.rejected, (draft, action) => {
-        draft.removePostLoading = false;
-        draft.removePostError = action.error;
-      })
+
   },
 });
-export const { setLogOutLoading,addPostToMe,removePostOfMe } = userSlice.actions;
+export const { setLogOutLoading,addPostToMe,removePostOfMe, setPosts  } = userSlice.actions;
 
 export default userSlice.reducer;
 

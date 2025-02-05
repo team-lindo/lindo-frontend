@@ -65,11 +65,23 @@ export const Indicator = styled.div`
   }
 `;
 
-export const Global = createGlobalStyle`
+/*export const Global = createGlobalStyle`
   .slick-slide {
     display: inline-block;
   }
   .ant-card-cover {
     transform: none !important;
+  }
+`;*/
+export const Global = createGlobalStyle`
+  .slick-slide {
+     display: flex;
+     justify-content: center;
+    align-items: center;
+  }
+  .ant-card-cover {
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 `;

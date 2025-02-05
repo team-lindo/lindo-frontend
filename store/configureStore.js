@@ -1,5 +1,24 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { createWrapper } from 'next-redux-wrapper';
+import rootReducer from '../reducers';
+
+const makeStore = () => configureStore({
+  reducer: rootReducer,
+  devTools: process.env.NODE_ENV !== 'production',
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: false, 
+      immutableCheck: false, 
+    }),
+});
+
+export const wrapper = createWrapper(makeStore, {
+  debug: process.env.NODE_ENV !== 'production',
+});
+
+
+/*import { configureStore } from '@reduxjs/toolkit';
+import { createWrapper } from 'next-redux-wrapper';
 import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import rootReducer from '../reducers';
@@ -26,7 +45,7 @@ export const makeStore = () => {
 };
 
 export const wrapper = createWrapper(makeStore);
-
+*/
 /*import { configureStore } from '@reduxjs/toolkit';
 import { createWrapper } from 'next-redux-wrapper';
 import { persistReducer, persistStore } from 'redux-persist';

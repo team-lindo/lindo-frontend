@@ -38,7 +38,7 @@ const Closet = ({ addItem }) => {
       return;
     }
     if (addPostDone&& newPost) {
-      console.log('게시물 추가 완료');
+    //  console.log('게시물 추가 완료');
       dispatch(addPostToMe(newPost.id)); // me가 있을 때만 호출
       dispatch(resetAddPostDone());
     }
@@ -48,7 +48,7 @@ const Closet = ({ addItem }) => {
   const handleSubmit = async (values) => {
     const id = shortId.generate();
 
-    console.log('Form Values:', values); // 디버깅
+   // console.log('Form Values:', values); // 디버깅
 
     if (!values.description.trim()) {
       return alert("설명을 입력하세요!");
@@ -67,10 +67,12 @@ const Closet = ({ addItem }) => {
       size: values.size,
       site: values.site,
       writer: me?.id || 'unknown',
-      images: fileList.map((file) => file.url || file.response?.url),
+      
+
+     images: fileList.map((file) => file.url || file.response?.url),
     };
 
-    console.log('New Post:', Post); // 디버깅
+   // console.log('New Post:', Post); // 디버깅
   /*  dispatch(addPost(Post));
     dispatch(addPostToMe(Post.id)); // 게시물을 사용자 정보에 추가
     // addPost 및 addPostToMe 동시 디스패치
@@ -78,9 +80,9 @@ const Closet = ({ addItem }) => {
     const result = await dispatch(addPost({ id, text: Post }));
 
     if (result.meta.requestStatus === 'fulfilled') {
-      console.log('addPost 성공');
+    //  console.log('addPost 성공');
       dispatch(addPostToMe(Post.id)); // addPost 성공 시에만 addPostToMe 호출
-      console.log("addPostToMe payload:", Post.id); // Post.id 직접 출력
+     // console.log("addPostToMe payload:", Post.id); // Post.id 직접 출력
 
       router.push('/'); // 성공적으로 완료된 후 이동
     } else {
@@ -93,6 +95,8 @@ const Closet = ({ addItem }) => {
   const onChange = ({ fileList: newFileList }) => {
     setFileList(newFileList);
   };
+
+
 
   const onPreview = async (file) => {
     let src = file.url;
@@ -126,7 +130,7 @@ const Closet = ({ addItem }) => {
                 layout="vertical"
                 initialValues={product}
                 onFinish={(values) => {
-                  console.log('Form Data Submitted:', values); // 입력 데이터 확인
+                //  console.log('Form Data Submitted:', values); // 입력 데이터 확인
                   handleSubmit(values); 
                 }}             
               >
@@ -246,8 +250,8 @@ const Closet = ({ addItem }) => {
                     onChange={(e) => {
                       const formData = new FormData();
                       formData.append('description', e.target.value);
-                      console.log('FormData Description:', formData.get('description'));
-                      console.log('FormData Description:', e.target.value); // 실시간 값 확인
+                   //   console.log('FormData Description:', formData.get('description'));
+                    //  console.log('FormData Description:', e.target.value); // 실시간 값 확인
 
                       dispatch(updateProduct({ description: e.target.value }));
                     }}

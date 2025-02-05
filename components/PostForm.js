@@ -1,4 +1,17 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React from 'react'
+
+const PostForm = () => {
+  return (
+    <div>
+      
+    </div>
+  )
+}
+
+export default PostForm
+
+
+/*import React, { useCallback, useEffect, useRef } from 'react';
 import { Button, Form, Input } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -74,4 +87,4 @@ const PostForm = () => {
   );
 };
 
-export default PostForm;
+export default PostForm;*/
