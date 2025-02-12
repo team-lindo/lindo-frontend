@@ -6,7 +6,7 @@ import ImagesZoom from './ImagesZoom';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
-const PostImages = ({images= []}) => {
+const PostImages = ({ images = [] }) => {
   const [showImagesZoom, setShowImagesZoom] = useState(false);
 
   const onZoom = () => {
@@ -22,6 +22,7 @@ const PostImages = ({images= []}) => {
     speed: 500,
     slidesToShow: 1,
     slidesToScroll: 1,
+    focusOnSelect: false, 
   };
 
   return (
@@ -29,15 +30,15 @@ const PostImages = ({images= []}) => {
       {images.length > 0 ? (
         <Slider {...settings}>
           {images.map((image, index) => (
-            <div key={index}>
+            <div key={image.id || index}>
               <Image
                 src={image.src}
-                role="presentation"
-                alt={image.src}
+                alt={`Post image ${index + 1}`}
                 width={600}
                 height={400}
                 onClick={onZoom}
                 priority
+                //priority={index === 0} // 첫 번째 이미지에만 priority 적용
               />
             </div>
           ))}
@@ -53,13 +54,10 @@ const PostImages = ({images= []}) => {
 PostImages.propTypes = {
   images: PropTypes.arrayOf(
     PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]), // id 추가
       src: PropTypes.string.isRequired,
     })
-  ).isRequired,
+  ),
 };
 
 export default PostImages;
-
-
-
-

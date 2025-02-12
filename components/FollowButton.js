@@ -17,10 +17,11 @@ const FollowButton = ({ post }) => {
     } else {
       dispatch(follow(post.User.id));
     }
-  }, [isFollowing, post.User.id, dispatch]);
+  }, [isFollowing, dispatch, post.User.id]);
+  
 
   // 본인 게시글이면 버튼 렌더링 X 
-  if (!me || post.User.id === me.id) {
+  if (!me ||Number(post.User.id) === me.id) {
     return null;
   }
 
@@ -39,11 +40,10 @@ const FollowButton = ({ post }) => {
     </Button>
   );
 };
-
 FollowButton.propTypes = {
   post: PropTypes.shape({
     User: PropTypes.shape({
-      id: PropTypes.number.isRequired,
+      id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired, // number 또는 string 허용
     }).isRequired,
   }).isRequired,
 };

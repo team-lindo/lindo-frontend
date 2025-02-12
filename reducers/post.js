@@ -20,6 +20,8 @@ export const generateDummyPost = (number) =>
         Images: [
           {
             src: faker.image.url() || "/default-image.png",
+            fetchPriority: "auto", // "high", "low", "auto" 가능
+
           },
         ],
         Comments: [
@@ -43,6 +45,12 @@ export const initialState = {
  //posts: [],
   imagePaths: [],
   hasMorePosts: true,
+  likePostLoading: false,
+  likePostDone: false,
+  likePostError: null,
+  unlikePostLoading: false,
+  unlikePostDone: false,
+  unlikePostError: null,
   loadPostLoading: false,
   loadPostDone: false,
   loadPostError: null,
@@ -55,9 +63,18 @@ export const initialState = {
   addCommentLoading: false,
   addCommentDone: false,
   addCommentError: null,
+  updatePostLoading: false,
+  updatePostDone: false,
+  updatePostError: null,
   removePostLoading: false,
   removePostDone: false,
   removePostError: null,
+  uploadImagesLoading: false,
+  uploadImagesDone: false,
+  uploadImagesError: null,
+  retweetLoading: false,
+  retweetDone: false,
+  retweetError: null,
 };
 
 
@@ -136,11 +153,11 @@ export const loadUserPosts = createAsyncThunk(
     });
   };
   
-  const throttledFetchPosts = _.throttle(fetchPosts, 5000); // ✅ throttle을 분리
+  const throttledFetchPosts = _.throttle(fetchPosts, 5000); 
   
   export const loadPosts = createAsyncThunk("post/loadPosts", async (lastId, thunkAPI) => {
-    const result = await throttledFetchPosts(lastId, thunkAPI); // ✅ throttle을 따로 관리
-   // console.log("Thunk Result:", result); // ✅ Redux로 반환되는 값 확인
+    const result = await throttledFetchPosts(lastId, thunkAPI); 
+   // console.log("Thunk Result:", result); 
     return result;
   });
   
@@ -163,8 +180,44 @@ export const loadUserPosts = createAsyncThunk(
       return thunkAPI.rejectWithValue(error.message);
     }
   });
+  export const addPost = createAsyncThunk('post/addPost', async (data, thunkAPI) => {
+    //console.log(" Received data:", JSON.stringify(data, null, 2)); 
   
-export const addPost = createAsyncThunk('post/addPost', async (data, thunkAPI) => {
+    try {
+      if (!data || typeof data !== "object") {
+        throw new Error(" Invalid data format: data must be an object.");
+      }
+  
+      if (!data || !data.userId) {
+        console.warn(" Warning: data.userId is undefined. Using default value 1.");
+      }
+      
+      if (!data.text || typeof data.text !== "object") {
+        console.warn(" Warning: data.text is missing or not an object. Using default content.");
+      }
+  
+      const dummyPost = {
+        id: typeof data.id === "string" || typeof data.id === "number" ? data.id : shortId.generate(),
+        User: {
+          id: typeof data.userId === "number" ? data.userId : 1, // userId를 number로 강제 변환
+          nickname: typeof data.nickname === "string" ? data.nickname : "test",
+        },
+        content: typeof data?.text?.description === "string" ? data.text.description : " 기본값: 내용 없음",
+        Images: Array.isArray(data?.images) ? data.images : [],
+        Comments: Array.isArray(data?.comments) ? data.comments : [],
+      };
+  
+      //console.log(" Generated dummyPost:", JSON.stringify(dummyPost, null, 2));
+  
+      return dummyPost;
+    } catch (error) {
+      //console.error(" Error in addPost:", error.message);
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  });
+  
+  
+/*export const addPost = createAsyncThunk('post/addPost', async (data, thunkAPI) => {
   try {
     const dummyPost = {
       id: data?.id ?? shortId.generate(),
@@ -172,8 +225,9 @@ export const addPost = createAsyncThunk('post/addPost', async (data, thunkAPI) =
         id: 1,
         nickname: 'test',
       },
-      content: data,
-     // content: data.content || '내용 없음', // content 값 확인
+      //content: data,
+      content: typeof data === 'string' ? data : data?.content ?? '내용 없음', // 🔥 문자열이면 그대로 사용
+
       Images: [],
       Comments: [],
     };
@@ -182,7 +236,7 @@ export const addPost = createAsyncThunk('post/addPost', async (data, thunkAPI) =
     return thunkAPI.rejectWithValue(error.message);
   }
 });
-
+*/
 export const addComment = createAsyncThunk('post/addComment', async (data, thunkAPI) => {
   try {
     const dummyComment = {
@@ -230,6 +284,71 @@ export const removePost = createAsyncThunk('post/removePost', async (postId, thu
   }
 });
 
+
+export const updatePost = createAsyncThunk('post/updatePost', async (data, thunkAPI) => {
+  try {
+    const updatedPost = {
+      PostId: data.PostId,
+      content: data.content,
+    };
+    return updatedPost;
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error.message);
+  }
+});
+
+export const likePost = createAsyncThunk('post/likePost', async (data, thunkAPI) => {
+  try {
+    const likedPost = {
+      PostId: data,
+      UserId: 1, // 예제 사용자 ID
+    };
+    return likedPost;
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error.message);
+  }
+});
+
+export const unlikePost = createAsyncThunk('post/unlikePost', async (data, thunkAPI) => {
+  try {
+    const unlikedPost = {
+      PostId: data,
+      UserId: 1, // 예제 사용자 ID
+    };
+    return unlikedPost;
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error.message);
+  }
+});
+
+export const uploadImage = createAsyncThunk('post/uploadImage', async (data, thunkAPI) => {
+  try {
+    const uploadedImages = [
+      { id: shortId.generate(), src: '/dummy-image.png' }, // 더미 이미지 데이터
+    ];
+    return uploadedImages;
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error.message);
+  }
+});
+
+export const retweet = createAsyncThunk('post/retweet', async (data, thunkAPI) => {
+  try {
+    const retweetedPost = {
+      id: shortId.generate(),
+      content: `RT: ${data.content}`,
+      User: {
+        id: shortId.generate(),
+        nickname: '리트윗 사용자',
+      },
+      Images: data.Images || [],
+      Comments: [],
+    };
+    return retweetedPost;
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error.message);
+  }
+});
 
 
 const postSlice = createSlice({
@@ -339,50 +458,34 @@ const postSlice = createSlice({
         draft.addPostError = null;
       })
       .addCase(addPost.fulfilled, (draft, action) => {
-       // console.log('Payload:', action.payload);
-      //  console.log('Payload Content:', action.payload?.content);
-    
+        console.log(" Redux addPost fulfilled:", action.payload);
+      
         draft.addPostLoading = false;
         draft.addPostDone = true;
-    
-        // 기존 content 데이터 유지
-        const content = action.payload.content ? { ...action.payload.content } : {};
-    
-        // 기존 description 유지하면서, 없을 경우 기본값 설정
-        const description = action.payload.description || 
-        action.payload.content?.text?.description || 
-        '내용 없음';
-    
-        // 기존 content.description이 있으면 유지하고, 없으면 새로 설정
-        if (!content.description) {
-            content.description = description;
-        }
-    
-        // 기존 text 데이터가 존재하면 유지
-        if (content.text) {
-            content.text = { ...content.text };
-        }
-    
-        // 기존 productName, category, brand, price, size, site, writer 정보 유지
-        content.productName = content.productName || action.payload?.productName || '알 수 없음';
-        content.category = content.category || action.payload?.category || '기타';
-        content.brand = content.brand || action.payload?.brand || '브랜드 없음';
-        content.price = content.price ?? action.payload?.price ?? 0;
-        content.size = content.size || action.payload?.size || '사이즈 미정';
-        content.site = content.site || action.payload?.site || '사이트 없음';
-        content.writer = content.writer || action.payload?.writer || '작성자 없음';
-    
-        // 게시물 추가 (기존 content 데이터 유지)
+              const content = action.payload?.text?.description || action.payload?.content || "🚨 기본값: 내용 없음";
+      
+        console.log("🔍 최종 저장할 content 값:", content); // ✅ Redux 저장 전에 확인
+      
+        const productInfo = {
+          productName: action.payload?.productName || '알 수 없음',
+          category: action.payload?.category || '기타',
+          brand: action.payload?.brand || '브랜드 없음',
+          price: action.payload?.price ?? 0,
+          size: action.payload?.size || '사이즈 미정',
+          site: action.payload?.site || '사이트 없음',
+          writer: action.payload?.writer || '작성자 없음',
+        };
+      
+        // 게시물 추가 (content와 productInfo는 별도 저장)
         draft.mainPosts.unshift({
-            ...action.payload,
-            description: description, // description 설정
-            content: { ...content }, // 기존 데이터 유지
+          ...action.payload,
+          content: content, // content는 description 또는 기본값을 사용
+          productInfo: productInfo,
         });
-    
-       // console.log('Updated mainPosts:', draft.mainPosts);
-    })
-    
-    
+      
+        console.log('🛠 Updated Redux mainPosts:', draft.mainPosts);
+      })
+      
   
       .addCase(addPost.rejected, (draft, action) => {
         draft.addPostLoading = false;
@@ -450,6 +553,78 @@ const postSlice = createSlice({
       .addCase(removePost.rejected, (draft, action) => {
         draft.removePostLoading = false;
         draft.removePostError = action.error;
+      })
+      .addCase(updatePost.pending, (draft, action) => {
+        draft.updatePostLoading = true;
+        draft.updatePostDone = false;
+        draft.updatePostError = null;
+      })
+      .addCase(updatePost.fulfilled, (draft, action) => {
+        draft.updatePostLoading = false;
+        draft.updatePostDone = true;
+        draft.mainPosts.find((v) => v.id === action.payload.PostId).content = action.payload.content;
+      })
+      .addCase(updatePost.rejected, (draft, action) => {
+        draft.updatePostLoading = false;
+        draft.updatePostError = action.error;
+      }) 
+      .addCase(retweet.pending, (state, action) => {
+        state.retweetLoading = true;
+        state.retweetDone = false;
+        state.retweetError = null;
+      })
+      .addCase(retweet.fulfilled, (state, action) => {
+        state.retweetLoading = false;
+        state.retweetDone = true;
+        state.mainPosts.unshift(action.payload);
+      })
+      .addCase(retweet.rejected, (state, action) => {
+        state.retweetLoading = false;
+        state.retweetError = action.error;
+      })
+      .addCase(uploadImage.pending, (draft, action) => {
+        draft.uploadImagesLoading = true;
+        draft.uploadImagesDone = false;
+        draft.uploadImagesError = null;
+      })
+      .addCase(uploadImage.fulfilled, (draft, action) => {
+        draft.imagePaths = draft.imagePaths.concat(action.payload);
+        draft.uploadImagesLoading = false;
+        draft.uploadImagesDone = true;
+      })
+      .addCase(uploadImage.rejected, (draft, action) => {
+        draft.uploadImagesLoading = false;
+        draft.uploadImagesError = action.error;
+      })
+      .addCase(likePost.pending, (draft, action) => {
+        draft.likePostLoading = true;
+        draft.likePostDone = false;
+        draft.likePostError = null;
+      })
+      .addCase(likePost.fulfilled, (draft, action) => {
+        const post = draft.mainPosts.find((v) => v.id === action.payload.PostId);
+        post.Likers.push({ id: action.payload.UserId });
+        draft.likePostLoading = false;
+        draft.likePostDone = true;
+      })
+      .addCase(likePost.rejected, (draft, action) => {
+        draft.likePostLoading = false;
+        draft.likePostError = action.error;
+      })
+      .addCase(unlikePost.pending, (draft, action) => {
+        draft.unlikePostLoading = true;
+        draft.unlikePostDone = false;
+        draft.unlikePostError = null;
+      })
+      .addCase(unlikePost.fulfilled, (draft, action) => {
+        const post = draft.mainPosts.find((v) => v.id === action.payload.PostId);
+        post.Likers = post.Likers.filter((v) => v.id !== action.payload.UserId);
+        draft.unlikePostLoading = false;
+        draft.unlikePostDone = true;
+      })
+      .addCase(unlikePost.rejected, (draft, action) => {
+        draft.unlikePostLoading = false;
+        draft.unlikePostError = action.error;
       })
   },
 });

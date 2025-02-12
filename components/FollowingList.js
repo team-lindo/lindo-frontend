@@ -36,7 +36,7 @@ const FollowingList = ({ header, data }) => {
       renderItem={(item) => (
         <List.Item style={styles.listItem}>
           <Card
-            actions={[<StopOutlined key="stop" />]} // key 속성 수정
+            actions={[<StopOutlined key="stop" />]} 
           >
             <Card.Meta description={item.nickname} />
           </Card>

@@ -6,11 +6,10 @@ import Image from 'next/image';
 import { Overlay, Global, Header, CloseBtn, ImgWrapper, Indicator, SlickWrapper } from './styles';
 
 const ImagesZoom = ({ images, onClose }) => {
-  console.log('ImagesZoom props:', images); // 전달된 props 확인
+  //console.log('ImagesZoom props:', images); // 전달된 props 확인
 
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  // 중복 제거: src를 기준으로 Set을 사용하여 유일한 이미지 리스트 생성
   const uniqueImages = useMemo(() => {
     return Array.from(new Map(images.map((img) => [img.src, img])).values());
   }, [images]);
@@ -39,6 +38,8 @@ const ImagesZoom = ({ images, onClose }) => {
                   alt={`이미지 ${i + 1}`}
                   width={300}
                   height={300}
+                  priority
+                  unoptimized
                 />
               </ImgWrapper>
             ))}

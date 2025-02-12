@@ -24,7 +24,7 @@ const fakeApi = {
   
   login: async (loginData) => {
     //console.log("로그인 요청:", loginData);
-    return await fakeApi.me(); // ✅ `me` API를 반환하여 데이터 일관성 유지
+    return await fakeApi.me(); //  `me` API를 반환하여 데이터 일관성 유지
   },
 
   logout: async () => null,
@@ -168,7 +168,7 @@ const userSlice = createSlice({
         draft.logInDone = false;
       })
       .addCase(logIn.fulfilled, (draft, action) => {
-        console.log("Payload from API:", action.payload); // 디버깅용 로그 추가
+       // console.log("Payload from API:", action.payload); 
 
         draft.logInLoading = false;
         draft.me = action.payload;

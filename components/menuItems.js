@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 export const getMenuItems = (isLoggedIn, nickname) => [
+  
   {
     key: "help",
     label: <Link href="/help">고객센터</Link>,
@@ -17,6 +18,7 @@ export const getMenuItems = (isLoggedIn, nickname) => [
     : {
         key: "login",
         label: <Link href="/login">로그인</Link>,
+        
       },
 ];
 
