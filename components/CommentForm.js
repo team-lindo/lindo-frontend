@@ -5,52 +5,41 @@ import { useForm } from 'react-hook-form';
 import { Form, Input, Button } from 'antd';
 
 import { addComment } from '../reducers/post';
-import useInput from '../hooks/useInput';
 
 const CommentForm = ({ post }) => {
   const dispatch = useDispatch();
   const id = useSelector((state) => state.user.me?.id);
   const { addCommentDone, addCommentLoading } = useSelector((state) => state.post);
-  const [commentText, onChangeCommentText, setCommentText] = useInput('');
-  const { register, handleSubmit , setValue, reset  } = useForm();
+
+  const { register, handleSubmit, reset, setValue } = useForm();
 
   useEffect(() => {
     if (addCommentDone) {
-      setCommentText('');
-      reset({ commentText: '' }); 
+      reset(); // 모든 필드 초기화
     }
-  }, [addCommentDone, setCommentText, reset]);
+  }, [addCommentDone, reset]);
 
   const onSubmit = (data) => {
     dispatch(
       addComment({
-        content: data.commentText,
+        content: data.commentText, // useForm에서 가져온 값
         postId: post.id,
         userId: id,
-      }, [commentText, id]
-    )
+      })
     );
   };
-
-  // React Hook Form의 `register`와 Ant Design의 Input 연결
-  const registerInput = (name, options) => ({
-    ...register(name, options),
-    onChange: (e) => setValue(name, e.target.value),
-  });
 
   return (
     <Form onFinish={handleSubmit(onSubmit)} style={{ position: 'relative', margin: 0 }}>
       <Form.Item
-        name="commentText"
         rules={[{ required: true, message: '댓글을 입력해주세요.' }]}
         style={{ marginBottom: '8px' }}
       >
         <Input.TextArea
           rows={4}
           placeholder="댓글을 입력하세요"
-          value={commentText} 
-          onChange={onChangeCommentText}
-          {...registerInput('commentText', { required: true })}
+          {...register('commentText', { required: true })}
+          onChange={(e) => setValue('commentText', e.target.value)}
         />
       </Form.Item>
       <Form.Item>

@@ -1,25 +1,44 @@
 import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
-import { Button, Input } from 'antd';
+import { Input,Button, Space} from 'antd';
 import PropTypes from 'prop-types';
 import { useSelector } from 'react-redux';
-
+import { useDispatch } from 'react-redux';
 const { TextArea } = Input;
+import { updatePost } from "../reducers/post"; // updatePost가 정의된 경로
 
 const PostCardContent = ({ 
+  postId,
   postData='', 
-  editMode = false, // 기본값 설정
+  editMode = false, 
   onChangePost, 
-  onCancelUpdate 
-}) => {
+  onCancelUpdate }) => {
   const { updatePostLoading, updatePostDone } = useSelector((state) => state.post);
   const [editText, setEditText] = useState(postData || '');
+  const dispatch = useDispatch();
 
+  const handleUpdatePost = useCallback(() => {
+  // console.log("수정 버튼 클릭됨, editText:", editText,"postId",postId);
+    if (!postId) {
+      console.error("postId가 없습니다.");
+      return;
+    }
+    dispatch(updatePost({ PostId: postId, content: editText })); // createAsyncThunk 사용
+    onChangePost(editText);
+  }, [dispatch, editText, postId, onChangePost]);
+  
   useEffect(() => {
+  //  console.log("PostCardContent 렌더링됨 - postId:", postId);
+  }, [postId]);
+  
+  useEffect(() => {
+    console.log("updatePostDone 변경됨:", updatePostDone);
     if (updatePostDone) {
+    //  console.log("수정 완료, onCancelUpdate 호출됨");
       onCancelUpdate();
     }
   }, [updatePostDone, onCancelUpdate]);
+  
 
   const onChangeText = useCallback((e) => {
     setEditText(e.target.value);
@@ -60,6 +79,10 @@ const PostCardContent = ({
             onChange={onChangeText} 
             autoSize={{ minRows: 3, maxRows: 6 }} 
           />
+          <Space>
+          <Button loading={updatePostLoading} onClick={handleUpdatePost}>수정</Button>
+          <Button danger onClick={onClickCancel}>취소</Button>
+          </Space>
         </>
       ) : (
         renderPostContent()
@@ -69,7 +92,7 @@ const PostCardContent = ({
 };
 
 PostCardContent.propTypes = {
-  postData: PropTypes.string, // postData가 없을 경우 대비하여 필수 조건 제거
+  postData: PropTypes.string, 
   editMode: PropTypes.bool,
   onChangePost: PropTypes.func.isRequired,
   onCancelUpdate: PropTypes.func.isRequired,

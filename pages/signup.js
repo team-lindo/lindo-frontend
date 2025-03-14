@@ -4,7 +4,7 @@ import { Checkbox, Form, Input, Button, Row, Col, Typography } from "antd";
 import { useCallback, useState } from "react";
 import useInput from "../hooks/useInput";
 import dynamic from "next/dynamic";
-import { signup, loadMyInfo } from '../reducers/user';
+import { signup } from '../reducers/user';
 import { useDispatch, useSelector } from "react-redux";
 
 const { Title, Text } = Typography;

@@ -53,7 +53,7 @@ const Home = () => {
           
           <Row gutter={[16, 16]} justify="start">
             {clientLoaded &&
-              mainPosts.map((post, index) => {
+              mainPosts.map((post) => {
                 const normalizedPost = {
                   ...post,
                   content:

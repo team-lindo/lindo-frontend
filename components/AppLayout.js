@@ -1,9 +1,8 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { useSelector } from "react-redux"; // 리덕스 상태 가져오기
-import { Layout, Menu, Row, Col } from "antd";
+import {  Menu, Row, Col } from "antd";
 import { getMenuItems, combinedMenuItems } from "./menuItems";
-const { Header, Content } = Layout;
 
 const AppLayout = ({ children }) => {
   // Redux에서 user 상태 가져오기

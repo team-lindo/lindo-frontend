@@ -1,24 +1,100 @@
-const withTM = require('next-transpile-modules')([
-  'rc-util', 
-  'antd',   
-]);
+const { default: build } = require('next/dist/build');
 
-module.exports = withTM({
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   reactStrictMode: true,
-  staticPageGenerationTimeout: 120, 
-    images: {
-    domains: [], // 외부 도메인 이미지 사용 시 추가
-    unoptimized: true, // 이미지 최적화 비활성화
-  }, 
+  //output: "export",
+  staticPageGenerationTimeout: 120,
+  images: {
+    domains: [],
+    unoptimized: true,
+  },
+  transpilePackages: [
+    "antd",
+    "rc-util",
+    "rc-pagination",
+    "rc-picker",
+    "rc-input",
+    "antd-img-crop",
+    "@ant-design/icons",
+    "@ant-design/icons-svg"
+  ],
   webpack: (config) => {
     config.module.rules.push({
       test: /\.m?js$/,
       resolve: {
-        fullySpecified: false,
+        fullySpecified: false, // ✅ ESM 모듈 관련 오류 해결
       },
     });
 
+    // ✅ ESM 패키지를 Next.js에서 올바르게 해석할 수 있도록 변환
+    config.module.rules.push({
+      test: /node_modules\/(rc-util|antd|rc-pagination|rc-picker|rc-input|antd-img-crop|@ant-design\/icons|@ant-design\/icons-svg)\/.*\.js$/,
+      use: {
+        loader: "babel-loader",
+        options: {
+          presets: ["next/babel"],
+        },
+      },
+    });
+
+    // ✅ 파일 시스템 모듈 충돌 방지
+    config.resolve.fallback = { fs: false };
+
     return config;
   },
+};
 
-});
+module.exports = nextConfig;
+
+
+
+/*const { default: build } = require('next/dist/build');
+
+/** @type {import('next').NextConfig} */
+/*const nextConfig = {
+  reactStrictMode: true,
+  output: "export", // ✅ 추가: Next.js가 ESM을 지원하도록 설정
+  staticPageGenerationTimeout: 120,
+  images: {
+    domains: [],
+    unoptimized: true,
+  },
+  transpilePackages: [
+    "antd",
+    "rc-util",
+    "rc-pagination",
+    "rc-picker",
+    "rc-input",
+    "antd-img-crop",
+    "@ant-design/icons",
+    "@ant-design/icons-svg"
+  ],
+  webpack: (config) => {
+    config.module.rules.push({
+      test: /\.m?js$/,
+      resolve: {
+        fullySpecified: false, // ✅ ESM 모듈 관련 오류 해결
+      },
+    });
+
+    // ✅ ESM 패키지를 Next.js에서 올바르게 해석할 수 있도록 변환
+    config.module.rules.push({
+      test: /node_modules\/(rc-util|antd|rc-pagination|rc-picker|rc-input|antd-img-crop|@ant-design\/icons|@ant-design\/icons-svg)\/.*\.js$/,
+      use: {
+        loader: "babel-loader",
+        options: {
+          presets: ["next/babel"],
+        },
+      },
+    });
+
+    // ✅ 파일 시스템 모듈 충돌 방지
+    config.resolve.fallback = { fs: false };
+
+    return config;
+  },
+};
+
+module.exports = nextConfig;
+*/

@@ -1,10 +1,8 @@
 
 import Head from 'next/head';
-import { Input, Space } from "antd";
+import { Input } from "antd";
 import Link from "next/link";
 import { LeftOutlined } from '@ant-design/icons';
-const onSearch = (value, _e, info) => console.log(info?.source, value);
-const { Search } = Input;
 
 const SearchPage = () => {
   return (

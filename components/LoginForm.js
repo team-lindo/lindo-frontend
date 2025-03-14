@@ -4,7 +4,7 @@ import * as Yup from "yup";
 import { Input, Button, Typography, Row, Col } from "antd";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
-import useInput from '../hooks/useInput';
+//import useInput from '../hooks/useInput';
 import { logIn } from "../reducers/user";
 import { useMemo } from 'react';
 
@@ -13,8 +13,8 @@ const { Title, Text } = Typography;
 const LoginForm = () => {
   const dispatch = useDispatch();
   const { logInLoading, logInError } = useSelector((state) => state.user);
-  const [email, onChangeEmail] = useInput('');
-  const [password, onChangePassword] = useInput('');
+  // const [email, onChangeEmail] = useInput('');
+  // const [password, onChangePassword] = useInput('');
 
   useEffect(() => {
     if (logInError) {
@@ -54,7 +54,7 @@ const LoginForm = () => {
           validationSchema={validationSchema}
           onSubmit={onSubmitForm} // onSubmit 핸들러 설정
         >
-          {({ isSubmitting, errors, touched }) => (
+          {({ errors, touched }) => (
             <Form style={{ background: "#fff", padding: "30px", borderRadius: "10px", boxShadow: "0 4px 8px rgba(0,0,0,0.1)" }}>
               <div style={{ marginBottom: "16px" }}>
                 <label htmlFor="email">이메일</label>

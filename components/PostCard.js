@@ -1,9 +1,8 @@
 import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useSelector, useDispatch } from 'react-redux';
-import { Card, Popover, Button, Avatar, List } from 'antd';
-import { Comment } from '@ant-design/compatible';
-import {RetweetOutlined, HeartOutlined, MessageOutlined, EllipsisOutlined, HeartTwoTone,} from '@ant-design/icons';
+import { Card, Popover, Button, Space , Avatar, List } from 'antd';
+import {BookOutlined, HeartOutlined, MessageOutlined, EllipsisOutlined, HeartTwoTone,} from '@ant-design/icons';
 import Link from 'next/link';
 import moment from 'moment';
 import PostImages from './PostImages';
@@ -13,19 +12,18 @@ import {
   likePost,
   removePost,
   unlikePost,
-  retweet,
+  bookmark,
   updatePost,
 } from '../reducers/post';
 import FollowButton from './FollowButton';
 import { removePostOfMe } from '../reducers/user';
-
+const { Meta } = Card;
 moment.locale('ko');
 
 function PostCard({ post }) {
   if (!post || !post.User) {
     return null;
   }
-
   const dispatch = useDispatch();
   const { removePostLoading } = useSelector((state) => state.post);
   const id = useSelector((state) => state.user.me?.id);
@@ -84,21 +82,36 @@ function PostCard({ post }) {
     [id, dispatch]
   );
 
-  const onRetweet = useCallback(() => {
+  const onBookMark = useCallback(() => {
     if (!id) {
       return alert('로그인이 필요합니다.');
     }
-    return dispatch(retweet(post.id));
+    console.log("북마크 요청됨: post.id =", post.id);
+
+    return dispatch(bookmark(post.id));
   }, [id, dispatch, post.id]);
 
   const liked = !!post.Likers?.find((v) => v.id === id);
+  //console.log(Card);
+  //console.log("💬 post.Comments 데이터 확인:", post.Comments);
+  const CustomComment = ({ author, avatar, content }) => (
+    <div style={{ display: "flex", alignItems: "center", marginBottom: "10px", padding: "10px", borderBottom: "1px solid #ddd" }}>
+      <Avatar src={avatar} alt={author} />
+      <div style={{ marginLeft: "10px" }}>
+        <strong>{author}</strong>
+        <p>{content}</p>
+      </div>
+    </div>
+  );
+    //   console.log("🟢 PostCard의 post 객체:", post);
+    // console.log("🔵 PostCard의 post.id:", post?.id);
 
   return (
     <div style={{ marginBottom: 20 }}>
       <Card
         cover={post.Images?.length > 0 && <PostImages images={post.Images} />}
         actions={[
-          <RetweetOutlined key="retweet" onClick={onRetweet} />,
+          <BookOutlined key="bookmark" onClick={onBookMark} />,
           liked
             ? <HeartTwoTone key="heart" twoToneColor="#eb2f96" onClick={onUnlike} />
             : <HeartOutlined key="heart" onClick={onLike} />,
@@ -106,78 +119,74 @@ function PostCard({ post }) {
           <Popover
             key="more"
             content={(
-              <Button.Group>
+              <Space>
                 {id && post.User.id === id
                   ? (
                     <>
-                      {!post.RetweetId && <Button onClick={onClickUpdate}>수정</Button>}
+                      {!post.BookMarkId && <Button onClick={onClickUpdate}>수정</Button>}
                       <Button type="danger" loading={removePostLoading} onClick={() => onRemovePost(post.id)}>삭제</Button>
                     </>
                   )
                   : <Button>신고</Button>}
-              </Button.Group>
+              </Space>
             )}
           >
             <EllipsisOutlined />
           </Popover>,
         ]}
-        title={post.RetweetId ? `${post.User.nickname}님이 리트윗하셨습니다.` : null}
+        title={post.BookMarkId ? `${post.User.nickname}님이 리트윗하셨습니다.` : null}
         extra={id && <FollowButton post={post} />}
       >
-        {post.RetweetId && post.Retweet
+        {post.BookMarkId && post.BookMark
           ? (
             <Card
-              cover={post.Retweet.Images?.length > 0 && <PostImages images={post.Retweet.Images} />}
+              cover={post.BookMark.Images?.length > 0 && <PostImages images={post.BookMark.Images} />}
             >
               <div style={{ float: 'right' }}>{moment(post.createdAt).format('YYYY.MM.DD')}</div>
               <Card.Meta
                 avatar={(
-                  <Link href={`/user/${post.Retweet.User.id}`} prefetch={false}>
-                    <Avatar>{post.Retweet.User.nickname[0]}</Avatar>
+                  <Link href={`/user/${post.BookMark.User.id}`} legacyBehavior>
+                    <Avatar>{post.BookMark.User.nickname[0]}</Avatar>
                   </Link>
                 )}
-                title={post.Retweet.User.nickname}
-                description={<PostCardContent postData={post.Retweet.content} onChangePost={onChangePost} onCancelUpdate={onCancelUpdate} />}
+                title={post.BookMark.User.nickname}
+                description={<PostCardContent  postId={post.id}  postData={post.BookMark.content} onChangePost={onChangePost} onCancelUpdate={onCancelUpdate} />}
               />
             </Card>
           )
           : (
             <>
               <div style={{ float: 'right' }}>{moment(post.createdAt).format('YYYY.MM.DD')}</div>
-              <Card.Meta
+              <Meta
                 avatar={(
                   <Link href={`/user/${post.User.id}`} prefetch={false}>
                     <Avatar>{post.User.nickname[0]}</Avatar>
                   </Link>
                 )}
                 title={post.User.nickname}
-                description={<PostCardContent postData={postData} editMode={editMode} onChangePost={onChangePost} onCancelUpdate={onCancelUpdate} />}
+                description={<PostCardContent  postId={post.id} postData={postData} editMode={editMode} onChangePost={onChangePost} onCancelUpdate={onCancelUpdate} />}
               />
             </>
           )}
       </Card>
-
+ 
       {commentFormOpened && (
         <div>
           <CommentForm post={post} />
           <List
-            header={`${post.Comments?.length || 0}개의 댓글`}
-            itemLayout="horizontal"
-            dataSource={Array.isArray(post.Comments) ? post.Comments : []}
-            renderItem={(item, index) => (
-              <li key={item.id || index}>
-                <Comment
-                  author={item.User.nickname}
-                  avatar={(
-                    <Link href={`/user/${item.User.id}`} prefetch={false}>
-                      <Avatar>{item.User.nickname[0]}</Avatar>
-                    </Link>
-                  )}
-                  content={item.content}
-                />
-              </li>
-            )}
-          />
+          header={`${post.Comments?.length || 0}개의 댓글`}
+          itemLayout="horizontal"
+          dataSource={post.Comments}
+          renderItem={(item) => (
+            <li key={item?.id || Math.random()} style={{ listStyle: "none" }}>
+              <CustomComment
+                author={item?.User?.nickname || "익명"}
+                avatar={item?.User?.nickname ? `https://joeschmoe.io/api/v1/${item?.User?.nickname}` : undefined}
+                content={item?.content || "내용 없음"}
+              />
+            </li>
+          )}
+        />
         </div>
       )}
     </div>
@@ -193,8 +202,8 @@ PostCard.propTypes = {
     Comments: PropTypes.arrayOf(PropTypes.object),
     Images: PropTypes.arrayOf(PropTypes.object),
     Likers: PropTypes.arrayOf(PropTypes.object),
-    RetweetId: PropTypes.number,
-    Retweet: PropTypes.objectOf(PropTypes.any),
+    BookMarkId: PropTypes.number,
+    BookMark: PropTypes.objectOf(PropTypes.any),
   }).isRequired,
 };
 
