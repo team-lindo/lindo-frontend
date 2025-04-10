@@ -44,7 +44,7 @@ const Signup = () => {
     }
     console.log(email, nickname, password);
     return dispatch(signup({ email, password, nickname }));
-  }, [email, nickname, password, passwordCheck, term]);
+  }, [email, nickname, password, passwordCheck, term, dispatch]);
 
   return (
     <AppLayout>
@@ -62,19 +62,33 @@ const Signup = () => {
 
             <Form.Item
               label="이메일"
-              type = "email"
               name="user_email"
-              rules={[{ required: true, message: "아이디를 입력해주세요." }]}
+              rules={[
+                { required: true, message: "이메일을 입력해주세요." },
+                { type: "email", message: "유효한 이메일 주소를 입력해주세요." },
+              ]}
             >
-              <Input value={email} onChange={onChangeEmail} placeholder="아이디를 입력하세요" />
+              <Input
+                value={email}
+                onChange={onChangeEmail}
+                placeholder="example@example.com"
+                type="email"
+              />
             </Form.Item>
 
             <Form.Item
               label="닉네임"
               name="nickname"
-              rules={[{ required: true, message: "닉네임을 입력해주세요." }]}
+              rules={[
+                { required: true, message: "닉네임을 입력해주세요." },
+                { min: 2, message: "닉네임은 최소 2자 이상이어야 합니다." },
+              ]}
             >
-              <Input value={nickname} onChange={onChangeNickname} placeholder="닉네임을 입력하세요" />
+              <Input
+                value={nickname}
+                onChange={onChangeNickname}
+                placeholder="닉네임을 입력하세요"
+              />
             </Form.Item>
 
             <Form.Item

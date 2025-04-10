@@ -1,4 +1,47 @@
-import { useState, useCallback } from 'react';
+import PropTypes from 'prop-types';
+import { Card } from 'antd';
+import Link from 'next/link';
+import PostImages from './PostImages';
+
+function PostCard({ post }) {
+ // if (!post || !post.Images || post.Images.length === 0) return null;
+// console.log("포스트 이미지:", post.Images);
+
+  return (
+    <div style={{marginBottom: 24 }}>
+      <Link href={`/post/${post.id}`} legacyBehavior>
+        <a style={{ display: 'block', transition: 'transform 0.3s', borderRadius: '16px' }}>
+          <Card
+            hoverable
+            cover={
+              <div style={{ overflow: 'hidden', borderRadius: '16px' }}>
+                <PostImages images={post.Images} />
+              </div>
+            }
+            style={{
+              borderRadius: '16px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+              transition: 'all 0.3s ease-in-out',
+            }}
+            styles={{ body: { display: 'none' } }}       
+               />
+        </a>
+      </Link>
+    </div>
+  );
+}
+
+PostCard.propTypes = {
+  post: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    Images: PropTypes.arrayOf(PropTypes.object),
+  }).isRequired,
+};
+
+export default PostCard;
+
+
+/*import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useSelector, useDispatch } from 'react-redux';
 import { Card, Popover, Button, Space , Avatar, List } from 'antd';
@@ -109,8 +152,16 @@ function PostCard({ post }) {
   return (
     <div style={{ marginBottom: 20 }}>
       <Card
-        cover={post.Images?.length > 0 && <PostImages images={post.Images} />}
-        actions={[
+        cover={
+          post.Images?.length > 0 && (
+            <Link href={`/post/${post.id}`} legacyBehavior>
+              <a>
+                <PostImages images={post.Images} />
+              </a>
+            </Link>
+          )
+        }    
+    actions={[
           <BookOutlined key="bookmark" onClick={onBookMark} />,
           liked
             ? <HeartTwoTone key="heart" twoToneColor="#eb2f96" onClick={onUnlike} />
@@ -208,3 +259,4 @@ PostCard.propTypes = {
 };
 
 export default PostCard;
+*/

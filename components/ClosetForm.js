@@ -1,201 +1,238 @@
-import { useDispatch } from "react-redux";
-import { Form, Input, Button, Select, Typography, Upload, Row, Col, Tag, Tooltip } from "antd";
-import ImgCrop from "antd-img-crop";
-import PropTypes from "prop-types";
 import { useState } from "react";
-import { updateProduct } from "../reducers/product";
-import { addPost } from "../reducers/post";
-import { addPostToMe } from "../reducers/user";
-import shortId from "shortid";
-import { useRouter } from "next/router";
+import Image from "next/image";
+import { Button, Row, Col, Modal } from "antd";
+import { BiCloset } from "react-icons/bi";
+import { GiLabCoat } from "react-icons/gi";
+import {
+  PiTShirtLight,
+  PiPantsLight,
+  PiDressLight,
+  PiEyeglassesThin,
+} from "react-icons/pi";
+import { TbShoe, TbBrandRedhat } from "react-icons/tb";
+import { BsHandbag } from "react-icons/bs";
+import { UploadOutlined } from "@ant-design/icons";
+import Router from "next/router";
 
-const { Title } = Typography;
-const { Option } = Select;
+const categories = [
+  { name: "ALL", icon: BiCloset },
+  { name: "아우터", icon: GiLabCoat },
+  { name: "상의", icon: PiTShirtLight },
+  { name: "바지", icon: PiPantsLight },
+  { name: "드레스", icon: PiDressLight },
+  { name: "신발", icon: TbShoe },
+  { name: "가방", icon: BsHandbag },
+  { name: "모자", icon: TbBrandRedhat },
+  { name: "액세서리", icon: PiEyeglassesThin },
+];
 
-const ClosetForm = ({ me }) => {
-  const dispatch = useDispatch();
-  const router = useRouter();
-  const [fileList, setFileList] = useState([]);
-  const [productTags, setProductTags] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState(""); // 선택한 카테고리
-
-  const handleSubmit = async (values) => {
-    const id = shortId.generate();
-  
-    if (!values.description || !values.description.trim()) {
-      return alert("필수 정보를 입력하세요!");
-    }
-  
-    // 🚀 user 객체 수정: 항상 `id`와 `nickname`이 존재하도록 설정
-    const user = {
-      id: me?.id ?? 1, // 기본값 1
-      nickname: me?.nickname ?? "익명",
-    };
-  
-    // 제품 정보 객체 생성
-    const product = {
-      productName: values.productName,
-      category: values.category,
-      brand: values.brand,
-      price: values.price,
-      size: values.size,
-      siteUrl: values.siteUrl,
-      description: values.description?.trim() || "제품 설명이 없습니다.", // 🚀 description 추가
-      imageTag: fileList.length > 0 ? fileList[0].url || fileList[0].response?.url : null,
-    };
-  
-    // 이미지 태그에 제품 정보 포함
-    const imagesWithTags = fileList.map((file) => ({
-      src: file.url || file.response?.url,
-      fetchPriority: "auto",
-      productInfo:
-        product.productName && product.category === selectedCategory
-          ? `${product.brand} - ${product.productName} / ${product.price}원 / ${product.size}`
-          : "",
-      siteUrl: product.siteUrl || "",
-    }));
-  
-    // 제품 태그 상태 업데이트
-    setProductTags(imagesWithTags);
-  
-    const post = {
-      id,
-      user, // ✅ user 객체에 올바른 값 전달
-      description: values.description?.trim() || "설명이 없습니다.", // ✅ description 올바르게 전달
-      images: imagesWithTags,
-      products: [product],
-    };
-  
-    //console.log("🚀 Sending post data:", post); 
-  
-    const result = await dispatch(addPost(post));
-  
-    if (result.meta.requestStatus === "fulfilled") {
-      dispatch(addPostToMe(post.id));
-      router.push("/");
-    } else {
-      alert("게시물 추가 중 오류가 발생했습니다.");
-    }
-  };
-  
-
-  const onChange = ({ fileList: newFileList }) => {
-    setFileList(newFileList.map((file) => ({ ...file, fetchPriority: undefined })));
-  };
-
-  const onPreview = async (file) => {
-    let src = file.url;
-    if (!src) {
-      src = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file.originFileObj);
-        reader.onload = () => resolve(reader.result);
-      });
-    }
-    const image = new Image();
-    image.src = src;
-    const imgWindow = window.open(src);
-    imgWindow?.document.write(image.outerHTML);
-  };
-
-  return (
-    <section style={{ padding: "20px" }}>
-      <Row justify="center">
-        <Col span={16}>
-          <Title level={2} className="text-center">상품 업로드</Title>
-          <Form layout="vertical" onFinish={handleSubmit}>
-            {/* 이미지 업로드 */}
-            <Form.Item label="이미지 업로드">
-              <ImgCrop rotationSlider>
-                <Upload
-                  action="https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload"
-                  listType="picture-card"
-                  fileList={fileList}
-                  onChange={onChange}
-                  onPreview={onPreview}
-                >
-                  {fileList.length < 5 && "+ Upload"}
-                </Upload>
-              </ImgCrop>
-            </Form.Item>
-
-            {/* 등록된 제품 태그 (선택한 카테고리에 맞는 제품만 표시) */}
-            <div style={{ marginBottom: "20px" }}>
-              {productTags.map((tag, index) => (
-                <Tooltip key={index} title="제품 상세 정보 보기">
-                  <Tag color="blue" style={{ cursor: "pointer" }} onClick={() => window.open(tag.siteUrl, "_blank")}>
-                    {tag.productInfo}
-                  </Tag>
-                </Tooltip>
-              ))}
-            </div>
-
-            {/* 카테고리 */}
-            <Form.Item
-              label="카테고리"
-              name="category"
-              rules={[{ required: true, message: "카테고리를 선택하세요." }]}
-            >
-              <Select
-                placeholder="카테고리를 선택하세요"
-                onChange={(value) => {
-                  setSelectedCategory(value); // 선택한 카테고리 상태 업데이트
-                  dispatch(updateProduct({ category: value }));
-                }}
-              >
-                <Option value="outer">아우터</Option>
-                <Option value="top">상의</Option>
-                <Option value="bottom">하의</Option>
-                <Option value="bag">가방</Option>
-                <Option value="shoes">신발</Option>
-              </Select>
-            </Form.Item>
-
-            {/* 브랜드 */}
-            <Form.Item label="브랜드" name="brand" rules={[{ required: true }]}>
-              <Input placeholder="브랜드를 입력하세요" />
-            </Form.Item>
-
-            {/* 제품명 */}
-            <Form.Item label="제품명" name="productName" rules={[{ required: true }]}>
-              <Input placeholder="제품명을 입력하세요" />
-            </Form.Item>
-
-            {/* 가격 */}
-            <Form.Item label="가격" name="price" rules={[{ required: true }]}>
-              <Input type="number" placeholder="가격을 입력하세요" />
-            </Form.Item>
-
-            {/* 사이즈 */}
-            <Form.Item label="사이즈" name="size" rules={[{ required: true }]}>
-              <Input placeholder="사이즈를 입력하세요" />
-            </Form.Item>
-
-            {/* 구매 링크 */}
-            <Form.Item label="구매 링크" name="siteUrl">
-              <Input placeholder="제품 구매 링크를 입력하세요 (선택 사항)" />
-            </Form.Item>
-
-            {/* 설명 */}
-            <Form.Item label="설명" name="description" rules={[{ required: true }]}>
-              <Input.TextArea placeholder="설명을 입력하세요" rows={4} />
-            </Form.Item>
-
-            {/* 등록 버튼 */}
-            <Form.Item>
-              <Button type="primary" htmlType="submit" block>
-                등록하기
-              </Button>
-            </Form.Item>
-          </Form>
-        </Col>
-      </Row>
-    </section>
-  );
+export const initialClothes = {
+  아우터: [
+    { uid: "1", url: "/images/coat1.jpg" },
+    { uid: "2", url: "/images/coat2.jpg" },
+    { uid: "3", url: "/images/jacket1.jpg" },
+    { uid: "4", url: "/images/jacket2.jpg" },
+  ],
+  상의: [
+    { uid: "5", url: "/images/sweater1.jpg" },
+    { uid: "6", url: "/images/sweater2.jpg" },
+    { uid: "7", url: "/images/knit1.jpg" },
+    { uid: "8", url: "/images/knit2.jpg" },
+  ],
+  바지: [
+    { uid: "9", url: "/images/jeans1.jpg" },
+    { uid: "10", url: "/images/jeans2.jpg" },
+  ],
+  드레스: [{ uid: "-7", url: "/images/dress1.jpg" }],
+  신발: [{ uid: "-8", url: "/images/shoes1.jpg" }],
+  가방: [{ uid: "-9", url: "/images/bag1.jpg" }],
+  모자: [{ uid: "-10", url: "/images/hat1.jpg" }],
+  액세서리: [],
 };
 
-ClosetForm.propTypes = {
-  me: PropTypes.object,
+const ClosetForm = ({ clothesData = initialClothes, showUploadButton = true, isOwner }) => {
+  const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState("");
+
+  const handlePreview = (url) => {
+    setPreviewImage(url);
+    setPreviewOpen(true);
+  };
+  
+
+  const handleScrollToCategory = (categoryName) => {
+    setSelectedCategory(categoryName);
+    const target = document.getElementById(categoryName);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const filteredCategories =
+    selectedCategory === "ALL"
+      ? Object.keys(clothesData)
+      : [selectedCategory];
+
+  const isClosetEmpty = filteredCategories.every(
+    (category) => clothesData[category]?.length === 0
+  );
+
+  return (
+    <div className="closet-container">
+      <div className="category-bar">
+        {categories.map(({ name, icon: Icon }) => (
+          <Button
+            key={name}
+            className={`category-button ${selectedCategory === name ? "active" : ""}`}
+            onClick={() => handleScrollToCategory(name)}
+          >
+            <Icon size={24} />
+            <span>{name}</span>
+          </Button>
+        ))}
+      </div>
+
+      {isOwner && showUploadButton && (
+        <div style={{ textAlign: "center", marginTop: "20px" }}>
+          <Button
+            type="primary"
+            icon={<UploadOutlined />}
+            size="large"
+            onClick={() => Router.push("/upload")}
+            style={{ width: "200px" }}
+          >
+            상품 업로드하기
+          </Button>
+        </div>
+      )}
+
+      {isClosetEmpty ? (
+        <div className="empty-message">현재 옷장에 등록된 옷이 없습니다.</div>
+      ) : (
+        <Row gutter={[24, 24]}>
+          {filteredCategories.map((category) => (
+            <Col key={category} xs={24} sm={12}>
+              <div className="category-section" id={category}>
+                <div className="category-title">{category.toUpperCase()}</div>
+                <div className="grid-wrapper">
+                  <Row gutter={[8, 8]}>
+                    {clothesData[category]?.slice(0, 4).map((item) => (
+                      <Col key={item.uid} span={12}>
+                      <div className="image-box" onClick={() => handlePreview(item.url)}>
+                        <Image
+                          src={item.url}
+                          alt={category}
+                          fill
+                          style={{ objectFit: "cover" }}
+                        />
+                      </div>
+                      </Col>
+                    ))}
+                    {Array.from({
+                      length: 4 - (clothesData[category]?.slice(0, 4).length || 0),
+                    }).map((_, idx) => (
+                      <Col key={`empty-${idx}`} span={12}>
+                        <div className="empty-box" />
+                      </Col>
+                    ))}
+                  </Row>
+                </div>
+              </div>
+            </Col>
+          ))}
+        </Row>
+      )}
+
+      <Modal open={previewOpen} footer={null} onCancel={() => setPreviewOpen(false)} centered>
+       <Image src={previewImage} alt="Preview" width={400} height={400} style={{ objectFit: "cover" }} />
+      </Modal>
+
+      <style jsx>{`
+        .grid-wrapper {
+          max-width: 260px;
+          margin: 0 auto;
+        }
+        .closet-container {
+          padding: 20px;
+          max-width: 1000px;
+          margin: auto;
+          background-size: cover;
+          border-radius: 15px;
+          box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.2);
+        }
+        .category-bar {
+          display: flex;
+          overflow-x: auto;
+          padding: 15px 0;
+          border-bottom: 2px solid #8b5a2b;
+          justify-content: center;
+        }
+        .category-bar > :not(:last-child) {
+          margin-right: 15px;
+        }
+        .category-button {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          width: 70px;
+          height: 70px;
+          background: #fff8f0;
+          color: #6b4226;
+          border: none;
+          border-radius: 15px;
+          cursor: pointer;
+          font-size: 12px;
+          box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+          transition: all 0.3s ease-in-out;
+        }
+        .category-button:hover {
+          background: #f5e1c5;
+        }
+        .category-button.active {
+          background: #8b5a2b;
+          color: white;
+        }
+        .category-section {
+          margin-top: 40px;
+        }
+        .category-title {
+          text-align: center;
+          font-size: 18px;
+          font-weight: bold;
+          margin-bottom: 8px;
+        }
+        .image-box {
+          position: relative;
+          width: 100%;
+          aspect-ratio: 1 / 1;
+          border: 2px solid #8b5a2b;
+          border-radius: 10px;
+          overflow: hidden;
+          background: white;
+          cursor: pointer;
+        }
+        .image-box :global(img) {
+          object-fit: cover;
+        }
+        .empty-box {
+          width: 100%;
+          aspect-ratio: 1 / 1;
+          background: #f2f2f2;
+          border: 2px dashed #ccc;
+          border-radius: 10px;
+        }
+        .empty-message,
+        .empty-category-message {
+          text-align: center;
+          color: #555;
+          padding: 20px;
+          font-style: italic;
+        }
+      `}</style>
+    </div>
+  );
 };
 
 export default ClosetForm;

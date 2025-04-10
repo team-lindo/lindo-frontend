@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import { Input, Button, Typography, Row, Col } from "antd";
@@ -78,7 +78,9 @@ const LoginForm = () => {
                 <Button type="primary" htmlType="submit" loading={ logInLoading} block>
                   로그인
                 </Button>
-                <Link href="/signup"><Button>회원가입</Button></Link>
+                <Link href="/signup">
+                <Button>회원가입</Button>
+                </Link>
               </div>
             </Form>
           )}

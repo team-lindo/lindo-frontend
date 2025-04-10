@@ -1,16 +1,35 @@
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import Head from 'next/head';
-import { Provider } from 'react-redux';
+import { Provider, useDispatch } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { wrapper } from '../store/configureStore';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
+import '../styles/globals.css';
+import { setMe } from "../reducers/user";
+
+// ✅ AppInitializer 컴포넌트 분리
+function AppInitializer() {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    const saved = localStorage.getItem("me");
+    if (saved) {
+      try {
+        const user = JSON.parse(saved);
+        dispatch(setMe(user));
+      } catch (e) {
+        console.error("me 복구 실패", e);
+      }
+    }
+  }, [dispatch]);
+
+  return null;
+}
 
 function NodeBird({ Component, ...rest }) {
   const { store, props } = wrapper.useWrappedStore(rest);
-  
-  // 🔥 클라이언트에서만 Redux Persist 실행하도록 상태 관리
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -28,8 +47,9 @@ function NodeBird({ Component, ...rest }) {
         <meta httpEquiv="X-UA-Compatible" content="ie=edge" />
         <title>NodeBird</title>
       </Head>
-      
-      {/* 🔥 store.__PERSISTOR가 존재할 때만 PersistGate 실행 */}
+
+      <AppInitializer />
+
       {isClient && store.__PERSISTOR ? (
         <PersistGate persistor={store.__PERSISTOR} loading={null}>
           <Component {...props.pageProps} />
@@ -46,4 +66,3 @@ NodeBird.propTypes = {
 };
 
 export default NodeBird;
-

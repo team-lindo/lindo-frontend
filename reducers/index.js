@@ -4,6 +4,7 @@ import user from './user';
 import post from './post';
 import { combineReducers } from "@reduxjs/toolkit";
 import product from "./product";
+import search from "./search";
 
 const rootReducer = combineReducers({
     // index 리듀서를 정의
@@ -16,10 +17,11 @@ const rootReducer = combineReducers({
                 return state;
         }
     },
-    // 실제 user와 post 리듀서 연결
+    // 실제 리듀서 연결
     user,
     post,
-    product
+    product,
+    search,
 });
 
 export default rootReducer;

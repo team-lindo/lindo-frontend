@@ -3,7 +3,7 @@ import { HYDRATE } from 'next-redux-wrapper';
 import shortId from 'shortid';
 import { faker } from '@faker-js/faker';
 import _ from 'lodash';
-
+import { fakeApi } from './user';
 export const generateDummyPost = (number) =>
   Array(number)
     .fill()
@@ -60,8 +60,8 @@ export const generateDummyPost = (number) =>
 export const initialState = {
   //게시글 작성마다 mainPosts 앞에 추가됨
   //댓글은 게시글의 id를 찾고 Comments로 접근함함
- // mainPosts:  [],
-  mainPosts: generateDummyPost(10),  
+  mainPosts:  [],
+  //mainPosts: generateDummyPost(10),  
  //posts: [],
   imagePaths: [],
   hasMorePosts: true,
@@ -181,25 +181,56 @@ export const loadUserPosts = createAsyncThunk(
     return result;
   });
   
-
-  export const loadPost = createAsyncThunk('post/loadPost', async (data, thunkAPI) => {
+  export const loadPost = createAsyncThunk('post/loadPost', async ({ id }, thunkAPI) => {
     try {
-      const dummyPost = {
-        id: data?.id ?? shortId.generate(), // id가 없으면 새로 생성
-        User: {
-          id: 1,
-          nickname: 'test',
-        },
-        content: typeof data === 'object' ? data.content ?? '내용 없음' : data ?? '내용 없음', // 문자열/객체 모두 처리
-        Images: Array.isArray(data?.Images) ? data.Images : [],
-        Comments: Array.isArray(data?.Comments) ? data.Comments : [],
-      };
+      // 모든 유저 검색
+      const userIds = [1, 2, 3, 5]; // fakeApi에 등록된 사용자 ID
   
-      return dummyPost;
+      for (const userId of userIds) {
+        const res = await fakeApi.getUserById(userId);
+        const user = res?.data;
+        if (!user || !Array.isArray(user.Posts)) continue;
+  
+        const post = user.Posts.find((p) => String(p.id) === String(id));
+        if (post) {
+          return {
+            ...post,
+            User: {
+              id: user.id,
+              nickname: user.nickname,
+            },
+            Comments: [], // 댓글도 비워서 리턴
+            Likers: [],
+          };
+        }
+      }
+  
+      // 해당 post가 없을 경우
+      return thunkAPI.rejectWithValue('해당 게시글을 찾을 수 없습니다.');
     } catch (error) {
       return thunkAPI.rejectWithValue(error.message);
     }
   });
+  // export const loadPost = createAsyncThunk('post/loadPost', async (data, thunkAPI) => {
+  //   try {
+  //     const dummyPost = {
+  //       id: data?.id ?? shortId.generate(), // id가 없으면 새로 생성
+  //       User: {
+  //         id: 1,
+  //         nickname: 'test',
+  //       },
+  //       content: typeof data === 'object' ? data.content ?? '내용 없음' : data ?? '내용 없음', // 문자열/객체 모두 처리
+  //       Images: Array.isArray(data?.Images) ? data.Images : [],
+  //       Comments: Array.isArray(data?.Comments) ? data.Comments : [],
+  //       Likers: Array.isArray(data?.Likers) ? data.Likers : [], // ✅ 이 줄 추가!
+
+  //     };
+  
+  //     return dummyPost;
+  //   } catch (error) {
+  //     return thunkAPI.rejectWithValue(error.message);
+  //   }
+  // });
  /* export const addPost = createAsyncThunk('post/addPost', async (data, thunkAPI) => {
     try {
       console.log("🔍 Received data in addPost:", data);
@@ -526,23 +557,52 @@ export const uploadImage = createAsyncThunk('post/uploadImage', async (data, thu
   }
 });
 
-export const bookmark = createAsyncThunk('post/bookmark', async (data, thunkAPI) => {
+export const bookmark = createAsyncThunk('post/bookmark', async (post, thunkAPI) => {
   try {
+    if (!post || !post.content) {
+      throw new Error('Invalid post data');
+    }
+
     const bookmarkedPost = {
       id: shortId.generate(),
-      content: `RT: ${data.content}`,
+      content: `RT: ${post.content}`,
       User: {
         id: shortId.generate(),
-        nickname: '리트윗 사용자',
+        nickname: post.User?.nickname || '북마크 사용자',
       },
-      Images: data.Images || [],
+      Images: post.Images || [],
       Comments: [],
     };
     return bookmarkedPost;
   } catch (error) {
+    console.error('❌ bookmark thunk 오류:', error.message);
     return thunkAPI.rejectWithValue(error.message);
   }
 });
+
+
+export const unbookmark = createAsyncThunk( 'post/unbookmark', async (postId, thunkAPI) => {
+    try {
+    /*   const state = thunkAPI.getState();
+     const isBookmarked = state.post.bookmarkedPosts.some(
+        (post) => String(post.id) === String(postId)
+      );
+      if (!isBookmarked) {
+        throw new Error(`Post with ID ${postId} is not bookmarked.`);
+      }*/
+
+      const dummyResponse = {
+        message: 'Post unbookmarked successfully',
+        postId,
+      };
+
+      return dummyResponse;
+    } catch (error) {
+      console.error('Failed to unbookmark post:', error.message);
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
 
 const postSlice = createSlice({
   name: 'post',
@@ -554,6 +614,11 @@ const postSlice = createSlice({
     resetAddPostDone(draft) {
       draft.addPostDone = false; // 상태 초기화
     },
+    addPostToMainPosts: (draft, action) => {
+      const exists = draft.mainPosts.find((v) => String(v.id) === String(action.payload.id));
+      if (!exists) {
+        draft.mainPosts.push(action.payload);
+      }}
   },
   extraReducers: (builder) => {
     builder
@@ -587,7 +652,11 @@ const postSlice = createSlice({
       .addCase(loadPost.fulfilled, (draft, action) => {
         draft.loadPostLoading = false;
         draft.loadPostDone = true;
-        draft.singlePost = action.payload;
+       // draft.singlePost = action.payload;
+       const already = draft.mainPosts.find((p) => String(p.id) === String(action.payload.id));
+       if (!already) {
+         draft.mainPosts.unshift(action.payload); // 앞에 추가
+       }
       })
       .addCase(loadPost.rejected, (draft, action) => {
         draft.loadPostLoading = false;
@@ -735,8 +804,7 @@ const postSlice = createSlice({
       
         //console.log('After removing post:', draft.mainPosts);
       })
-      
-      
+  
       .addCase(removePost.rejected, (draft, action) => {
         draft.removePostLoading = false;
         draft.removePostError = action.error;
@@ -760,20 +828,7 @@ const postSlice = createSlice({
         draft.updatePostLoading = false;
         draft.updatePostError = action.error;
       }) 
-      .addCase(bookmark.pending, (state, action) => {
-        state.bookmarkLoading = true;
-        state.bookmarkDone = false;
-        state.bookmarkError = null;
-      })
-      .addCase(bookmark.fulfilled, (state, action) => {
-        state.bookmarkLoading = false;
-        state.bookmarkDone = true;
-        state.mainPosts.unshift(action.payload);
-      })
-      .addCase(bookmark.rejected, (state, action) => {
-        state.bookmarkLoading = false;
-        state.bookmarkError = action.error;
-      })
+
       .addCase(uploadImage.pending, (draft, action) => {
         draft.uploadImagesLoading = true;
         draft.uploadImagesDone = false;
@@ -818,8 +873,9 @@ const postSlice = createSlice({
         draft.unlikePostLoading = false;
         draft.unlikePostError = action.error;
       })
-  },
-});
 
-export const { removeImage, resetAddPostDone } = postSlice.actions;
+  },
+})
+
+export const { removeImage, resetAddPostDone,addPostToMainPosts } = postSlice.actions;
 export default postSlice.reducer;

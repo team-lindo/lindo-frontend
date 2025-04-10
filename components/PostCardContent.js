@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 const { TextArea } = Input;
-import { updatePost } from "../reducers/post"; // updatePost가 정의된 경로
+import { updatePost } from "../reducers/post";
 
 const PostCardContent = ({ 
   postId,

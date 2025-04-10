@@ -1,4 +1,3 @@
-"use client";
 
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -23,7 +22,7 @@ export default function ScrollListener() {
     return () => {
       window.removeEventListener("scroll", onScroll);
     };
-  }, [hasMorePosts, loadPostsLoading, mainPosts.length, dispatch]);
+  }, [lastId,hasMorePosts, loadPostsLoading, dispatch]);
 
   return null; // 화면에 보이지 않도록 null 반환
 }
