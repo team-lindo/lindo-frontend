@@ -181,42 +181,21 @@ export const fakeApi = {
     },
   };
   
+export const initialUserProfile = {
+    id: null,
+    nickname: null,
+    email: null,
+    profileImageUrl: null,
+    Posts: [],       
+    Followings: [], 
+    Followers: [],    
+  };
 
 const initialState = {
   isLoggedIn: false,
   me: null,
-  // me: {
-  //   id: null,
-  //   nickname: null,
-  //   email: null,
-  //   profileImageUrl: null, // 추가 필드
-  // },
-  posts: [
-    {
-      id: 1,
-      content: "test의 게시물 #여름 #반팔" ,
-      Images: [{ id: 1, src: "/images/test.jpg" }],
-      User: { id: 1, nickname: "test" },
-    },
-    {
-      id: 2,
-      content: "test2의 게시물" ,
-      Images: [{ id: 2, src: "/images/test2.jpg" }],
-      User: { id: 2, nickname: "test2" },
-    },
-    {
-      id: 3,
-      content:  "test3의 게시물" ,
-      Images: [{ id: 3, src: "/images/test3.jpg" }],
-      User: { id: 3, nickname: "test3" },
-    },
-    {
-      id: 5,
-      content: "test1의 게시물 #봄 #가을" ,
-      Images: [{ id: 5, src: "/images/test1.jpg" }],
-      User: { id: 5, nickname: "test1" },
-    },
-  ],
+  userProfile: initialUserProfile,
+  posts: [],
   bookmarkedPosts: [],
   likedPosts: [], // 좋아요한 게시글
   savedItems: [], // 옷장 아이템
@@ -345,6 +324,16 @@ export const loadUser = createAsyncThunk(
     }
   }
 )
+export const fetchUserProfile = createAsyncThunk('user/fetchUserProfile', async (id, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.get(`/user/profile/${id}`); 
+    console.log("프로필 응답:", response.data);
+    return response.data; // 여기에는 Posts, Followings, Followers 다 포함됨
+  } catch (error) {
+    console.error("프로필 불러오기 실패:", error.response?.data || error.message);
+    return rejectWithValue(error.response?.data || error.message);
+  }
+});
 
 const userSlice = createSlice({
   name: 'user',
@@ -400,7 +389,6 @@ const userSlice = createSlice({
       })
       .addCase(logIn.fulfilled, (draft, action) => {
        // console.log("Payload from API:", action.payload); 
-
         draft.logInLoading = false;
         draft.me = action.payload;
         draft.isLoggedIn = true;
@@ -532,6 +520,23 @@ const userSlice = createSlice({
         if (!already) {
           writer.Posts.push(post);
         }
+      })
+      .addCase(fetchUserProfile.pending, (draft) => {
+       
+      })
+      .addCase(fetchUserProfile.fulfilled, (draft, action) => {
+        draft.userProfile = {
+          id: action.payload.id,
+          nickname: action.payload.nickname,
+          email: action.payload.email,
+          profileImageUrl: action.payload.profileImageUrl,
+          Posts: action.payload.Posts || [],
+          Followings: action.payload.Followings || [],
+          Followers: action.payload.Followers || [],
+        };
+      })
+      .addCase(fetchUserProfile.rejected, (draft, action) => {
+        console.error('userProfile 로드 실패', action.payload);
       });
   },
 });
