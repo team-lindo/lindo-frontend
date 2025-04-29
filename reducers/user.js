@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { HYDRATE } from 'next-redux-wrapper';
 import { bookmark, unbookmark,loadPost } from "./post";
+import axiosInstance from '../api/axiosInstance'; 
 
 export const fakeApi = {
   me: async () => ({
@@ -184,6 +185,12 @@ export const fakeApi = {
 const initialState = {
   isLoggedIn: false,
   me: null,
+  // me: {
+  //   id: null,
+  //   nickname: null,
+  //   email: null,
+  //   profileImageUrl: null, // 추가 필드
+  // },
   posts: [
     {
       id: 1,
@@ -234,15 +241,17 @@ const initialState = {
 
 };
 
-export const logIn = createAsyncThunk('user/logIn', async (loginData, thunkAPI) => {
+export const logIn = createAsyncThunk('user/logIn', async (data, { rejectWithValue }) => {
   try {
-    const response = await fakeApi.login(loginData);
-    console.log("로그인 API 응답:", response.data); 
+    const response = await axiosInstance.post('/user/login', data); // ✅ 이렇게
+    console.log("로그인 API 응답:", response.data);
     return response.data;
   } catch (error) {
-    return thunkAPI.rejectWithValue(error.message);
+    console.error("로그인 에러 발생:", error.response?.data || error.message);
+    return rejectWithValue(error.response?.data || error.message);
   }
 });
+
 
 export const logOut = createAsyncThunk('user/logOut', async (_, thunkAPI) => {
   try {

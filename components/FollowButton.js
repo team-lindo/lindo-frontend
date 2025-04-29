@@ -9,7 +9,7 @@ const FollowButton = ({ post }) => {
   const { me, followLoading, unfollowLoading } = useSelector((state) => state.user);
   
   // 현재 사용자가 해당 게시물 작성자를 팔로우하고 있다면 true
-  const isFollowing = !!me?.Followings.some((v) => v.id === post.User.id);
+  const isFollowing = !!me?.Followings?.some((v) => v.id === post.User.id);
 
   const onClickButton = useCallback(() => {
     if (isFollowing) {

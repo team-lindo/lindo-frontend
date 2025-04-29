@@ -159,9 +159,9 @@ const UserProfile = ({ userId: propUserId }) => {
             <Link href={`/post/${post.id}`} key={post.id}>
               <div
                 style={{
-                  width: "200px",
-                  height: "200px",
-                  overflow: "hidden",
+                  width:"200px",
+                  height:"200px",
+                  overflow:"hidden",
                   borderRadius: "8px",
                   display: "block",
                 }}
@@ -169,6 +169,8 @@ const UserProfile = ({ userId: propUserId }) => {
                 <Image
                   src={post.Images?.[0]?.src || "/default-image.png"}
                   alt="post thumbnail"
+                  width={200}
+                  height={200}
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
               </div>
