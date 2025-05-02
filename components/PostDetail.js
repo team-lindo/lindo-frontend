@@ -48,6 +48,7 @@ function PostDetail() {
   // console.log('✅ AppLayout:', AppLayout);
   // console.log('✅ CommentForm:', CommentForm);
   // console.log('✅ FollowButton:', FollowButton);
+
   useEffect(() => {
     if (!router.isReady || !me) return;
     if (!me) router.push('/login');
@@ -102,15 +103,46 @@ function PostDetail() {
     [dispatch, post]
   );
 
-  const onLike = useCallback(() => {
-    if (!me) return alert('로그인이 필요합니다.');
-    dispatch(likePost(post.id));
-  }, [me, dispatch, post?.id]);
+  // const isLiked = me?.likedPosts?.some((post) => {
+  //   // post가 PostId 필드를 가진 경우
+  //   return (post.PostId ?? post.id) === postId;
+  // });
+  // const isLiked = me?.likedPosts?.some((liked) => {
+  //   return (liked.PostId ?? liked.id) === post.id;
+  // });
+  const isLiked = me?.likedPosts?.some((liked) => liked.id === post.id);
+
+  
+  
 
   const onUnlike = useCallback(() => {
     if (!me) return alert('로그인이 필요합니다.');
     dispatch(unlikePost(post.id));
   }, [me, dispatch, post?.id]);
+
+  const onLike = useCallback(() => {
+    if (!me) return alert('로그인이 필요합니다.');
+    if (!post || !post.content) return alert('게시글 정보가 유효하지 않습니다.');
+  
+    if (isLiked) {
+      dispatch(unlikePost(post.id)) // 해제는 id만 넘겨도 OK
+        .unwrap()
+        .then(() => message.success('좋아요에서 제거되었습니다!'))
+        .catch((err) => {
+          message.error('좋아요 해제 실패');
+          console.error(err);
+        });
+    } else {
+        dispatch(likePost(post.id))
+        .unwrap()
+        .then(() => message.success('좋아요에 추가되었습니다!'))
+        .catch((err) => {
+          message.error('좋아요 실패');
+          console.error(err);
+        });
+    }
+  }, [me, dispatch, post,isLiked]);
+
 
   const onToggleComment = useCallback(() => {
     setCommentFormOpened((prev) => !prev);
@@ -164,10 +196,13 @@ function PostDetail() {
   }
   
   if (!post) return <p>게시물을 찾을 수 없습니다.</p>;
-  
- 
-  const liked = !!(post?.Likers ?? []).find((v) => v.id === me?.id);
+ // console.log('likedPosts:', me?.likedPosts);
+  console.log('isLiked:', isLiked);
+  console.log('me.likedPosts:', me?.likedPosts);
+  console.log('post.id:', post?.id);
+  console.log('isLiked:', isLiked);
 
+ 
   return (
     <>
       <Head>
@@ -182,7 +217,8 @@ function PostDetail() {
                 <BookOutlined key="bookmark" style={{ color: '#1890ff' }} onClick={onBookMark} />
               ) : (
                 <BookOutlined key="bookmark" onClick={onBookMark} />
-              ),              liked ? <HeartTwoTone key="heart" twoToneColor="#eb2f96" onClick={onUnlike} /> : <HeartOutlined key="heart" onClick={onLike} />,
+              ),             
+              isLiked ?( <HeartTwoTone key="heart" twoToneColor="#eb2f96" onClick={onUnlike} /> ):( <HeartOutlined key="heart" onClick={onLike} />),
               <MessageOutlined key="comment" onClick={onToggleComment} />,
               <Popover
                 key="more"

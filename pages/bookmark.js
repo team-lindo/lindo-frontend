@@ -16,6 +16,7 @@ export default function BookmarkPage() {
   useEffect(() => {
     console.log('🧪 me 변화 감지:', me);
     console.log('🧪 bookmarkedPosts:', me?.bookmarkedPosts);
+    console.log('🧪 likedPosts:', me?.likedPosts);
   }, [me]);
 
   if (!me) {
@@ -86,6 +87,8 @@ export default function BookmarkPage() {
                       <Image
                         src={item.imageUrl}
                         alt={item.name}
+                        width={200}
+                        height={300}
                         style={{ width: '100%', height: 140, objectFit: 'cover' }}
                       />
                       <p style={{ margin: '10px 0', fontWeight: 500 }}>{item.name}</p>

@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { HYDRATE } from 'next-redux-wrapper';
-import { bookmark, unbookmark,loadPost } from "./post";
+import { bookmark, unbookmark,loadPost,likePost,unlikePost } from "./post";
 import axiosInstance from '../api/axiosInstance'; 
 
 export const fakeApi = {
@@ -58,16 +58,7 @@ export const fakeApi = {
         { id: 1, name: '청바지', imageUrl: '/images/jeans1.jpg' },
         { id: 2, name: '셔츠', imageUrl: '/images/knit1.jpg' },
       ],
-      likedPosts: [
-        {
-          id: '5',
-          content: '좋아요한 게시글입니다',
-          User: {
-            id: '유저 id', nickname: 'test1' },
-          Images: [],
-          Comments: [],
-        },
-      ],
+      likedPosts: [],
       bookmarkedPosts: [],
      },
   }),
@@ -198,6 +189,9 @@ const initialState = {
   posts: [],
   bookmarkedPosts: [],
   likedPosts: [], // 좋아요한 게시글
+  likePostLoading: false,
+  likePostDone: false,
+  likePostError: null,
   savedItems: [], // 옷장 아이템
   logInLoading: false,//로그인 시도중
   logInDone: false,
@@ -482,6 +476,53 @@ const userSlice = createSlice({
       .addCase(changeNickname.rejected, (draft, action) => {
         draft.changeNicknameLoading = false;
         draft.changeNicknameError = action.payload;
+      })
+      .addCase(likePost.pending, (draft, action) => {
+        draft.likePostLoading = true;
+        draft.likePostDone = false;
+        draft.likePostError = null;
+      })
+      // .addCase(likePost.fulfilled, (draft, action) => {
+      //   if (!draft.likedPosts) draft.likedPosts = []; // 안전장치
+      //   draft.likedPosts.push(action.payload);
+        
+      //   // if (!draft.me) draft.me = { likedPosts: [] };
+      //   // if (!draft.me.likedPosts) draft.me.likedPosts = [];
+      
+      //   // const exists = draft.me.likedPosts.find((p) => p.id === action.payload.id);
+      //   // if (!exists) {
+      //   //   draft.me.likedPosts.unshift(action.payload); // 좋아요 추가
+      //   // }
+      // })
+      .addCase(likePost.fulfilled, (draft, action) => {
+        if (!draft.likedPosts) draft.likedPosts = [];
+        draft.likedPosts.push(action.payload);
+      
+        if (!draft.me) draft.me = { likedPosts: [] };
+        if (!draft.me.likedPosts) draft.me.likedPosts = [];
+      
+        const exists = draft.me.likedPosts.find((p) => p.id === action.payload.id);
+        if (!exists) {
+          draft.me.likedPosts.push(action.payload);
+        }
+      })
+      .addCase(likePost.rejected, (draft, action) => {
+        draft.likePostLoading = false;
+        draft.likePostError = action.error;
+      })
+      .addCase(unlikePost.pending, (draft, action) => {
+        draft.unlikePostLoading = true;
+        draft.unlikePostDone = false;
+        draft.unlikePostError = null;
+      })
+      .addCase(unlikePost.fulfilled, (draft, action) => {
+        if (!draft.me?.likedPosts) return;
+        draft.me.likedPosts = draft.me.likedPosts.filter((p) => p.id !== action.payload);
+      })
+
+      .addCase(unlikePost.rejected, (draft, action) => {
+        draft.unlikePostLoading = false;
+        draft.unlikePostError = action.error;
       })
       .addCase(bookmark.fulfilled, (draft, action) => {
         if (!draft.me) {

@@ -1,54 +1,9 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Button, Row, Col, Modal } from "antd";
-import { BiCloset } from "react-icons/bi";
-import { GiLabCoat } from "react-icons/gi";
-import {
-  PiTShirtLight,
-  PiPantsLight,
-  PiDressLight,
-  PiEyeglassesThin,
-} from "react-icons/pi";
-import { TbShoe, TbBrandRedhat } from "react-icons/tb";
-import { BsHandbag } from "react-icons/bs";
 import { UploadOutlined } from "@ant-design/icons";
 import Router from "next/router";
-
-const categories = [
-  { name: "ALL", icon: BiCloset },
-  { name: "아우터", icon: GiLabCoat },
-  { name: "상의", icon: PiTShirtLight },
-  { name: "바지", icon: PiPantsLight },
-  { name: "드레스", icon: PiDressLight },
-  { name: "신발", icon: TbShoe },
-  { name: "가방", icon: BsHandbag },
-  { name: "모자", icon: TbBrandRedhat },
-  { name: "액세서리", icon: PiEyeglassesThin },
-];
-
-export const initialClothes = {
-  아우터: [
-    { uid: "1", url: "/images/coat1.jpg" },
-    { uid: "2", url: "/images/coat2.jpg" },
-    { uid: "3", url: "/images/jacket1.jpg" },
-    { uid: "4", url: "/images/jacket2.jpg" },
-  ],
-  상의: [
-    { uid: "5", url: "/images/sweater1.jpg" },
-    { uid: "6", url: "/images/sweater2.jpg" },
-    { uid: "7", url: "/images/knit1.jpg" },
-    { uid: "8", url: "/images/knit2.jpg" },
-  ],
-  바지: [
-    { uid: "9", url: "/images/jeans1.jpg" },
-    { uid: "10", url: "/images/jeans2.jpg" },
-  ],
-  드레스: [{ uid: "-7", url: "/images/dress1.jpg" }],
-  신발: [{ uid: "-8", url: "/images/shoes1.jpg" }],
-  가방: [{ uid: "-9", url: "/images/bag1.jpg" }],
-  모자: [{ uid: "-10", url: "/images/hat1.jpg" }],
-  액세서리: [],
-};
+import {categories,initialClothes } from "../reducers/product"
 
 const ClosetForm = ({ clothesData = initialClothes, showUploadButton = true, isOwner }) => {
   const [selectedCategory, setSelectedCategory] = useState("ALL");
@@ -123,6 +78,8 @@ const ClosetForm = ({ clothesData = initialClothes, showUploadButton = true, isO
                         <Image
                           src={item.url}
                           alt={category}
+                          //width={200}
+                          //height={300}
                           fill
                           style={{ objectFit: "cover" }}
                         />

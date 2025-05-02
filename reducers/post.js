@@ -521,30 +521,79 @@ export const updatePost = createAsyncThunk(
     }
   }
 );
+// export const likePost = createAsyncThunk('post/likePost', async (postId, { getState, rejectWithValue }) => {
+//   try {
+//     const state = getState(); // ✅ 여기서 state 선언
+//     const me = state.user.me;
+//     const post = state.post.mainPosts.find(p => p.id === postId);
+    
+//     // 예: 좋아요 정보 서버에 전달
+//     return {
+//       ...post,
+//       PostId: postId,
+//       UserId: me?.id,
+//     };
+//   } catch (err) {
+//     return rejectWithValue(err.message);
+//   }
+// });
+export const likePost = createAsyncThunk(
+  'post/likePost',
+  async (postId, { getState, rejectWithValue }) => {
+    try {
+      const state = getState();
+      const me = state.user.me;
+      const post = state.post.mainPosts.find(p => String(p.id) === String(postId));
 
-export const likePost = createAsyncThunk('post/likePost', async (data, thunkAPI) => {
+      if (!post || !me) {
+        throw new Error('post 또는 사용자 정보가 없습니다.');
+      }
+
+      return {
+        ...post,
+        PostId: postId,
+        UserId: me.id,
+      };
+    } catch (err) {
+      console.error('🔥 likePost error:', err);
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+
+export const unlikePost = createAsyncThunk('post/unlikePost', async (postId, thunkAPI) => {
   try {
-    const likedPost = {
-      PostId: data,
-      UserId: 1, // 예제 사용자 ID
-    };
-    return likedPost;
+    // 단순히 postId만 넘기면 충분 (지울 때는 ID만 있으면 됨)
+    return { PostId: postId };
   } catch (error) {
     return thunkAPI.rejectWithValue(error.message);
   }
 });
 
-export const unlikePost = createAsyncThunk('post/unlikePost', async (data, thunkAPI) => {
-  try {
-    const unlikedPost = {
-      PostId: data,
-      UserId: 1, // 예제 사용자 ID
-    };
-    return unlikedPost;
-  } catch (error) {
-    return thunkAPI.rejectWithValue(error.message);
-  }
-});
+// export const likePost = createAsyncThunk('post/likePost', async (data, thunkAPI) => {
+//   try {
+//     const likedPost = {
+//       PostId: data,
+//       UserId: 1, // 예제 사용자 ID
+//     };
+//     return likedPost;
+//   } catch (error) {
+//     return thunkAPI.rejectWithValue(error.message);
+//   }
+// });
+
+// export const unlikePost = createAsyncThunk('post/unlikePost', async (data, thunkAPI) => {
+//   try {
+//     const unlikedPost = {
+//       PostId: data,
+//       UserId: 1, // 예제 사용자 ID
+//     };
+//     return unlikedPost;
+//   } catch (error) {
+//     return thunkAPI.rejectWithValue(error.message);
+//   }
+// });
 
 export const uploadImage = createAsyncThunk('post/uploadImage', async (data, thunkAPI) => {
   try {
@@ -842,36 +891,6 @@ const postSlice = createSlice({
       .addCase(uploadImage.rejected, (draft, action) => {
         draft.uploadImagesLoading = false;
         draft.uploadImagesError = action.error;
-      })
-      .addCase(likePost.pending, (draft, action) => {
-        draft.likePostLoading = true;
-        draft.likePostDone = false;
-        draft.likePostError = null;
-      })
-      .addCase(likePost.fulfilled, (draft, action) => {
-        const post = draft.mainPosts.find((v) => v.id === action.payload.PostId);
-        post.Likers.push({ id: action.payload.UserId });
-        draft.likePostLoading = false;
-        draft.likePostDone = true;
-      })
-      .addCase(likePost.rejected, (draft, action) => {
-        draft.likePostLoading = false;
-        draft.likePostError = action.error;
-      })
-      .addCase(unlikePost.pending, (draft, action) => {
-        draft.unlikePostLoading = true;
-        draft.unlikePostDone = false;
-        draft.unlikePostError = null;
-      })
-      .addCase(unlikePost.fulfilled, (draft, action) => {
-        const post = draft.mainPosts.find((v) => v.id === action.payload.PostId);
-        post.Likers = post.Likers.filter((v) => v.id !== action.payload.UserId);
-        draft.unlikePostLoading = false;
-        draft.unlikePostDone = true;
-      })
-      .addCase(unlikePost.rejected, (draft, action) => {
-        draft.unlikePostLoading = false;
-        draft.unlikePostError = action.error;
       })
 
   },

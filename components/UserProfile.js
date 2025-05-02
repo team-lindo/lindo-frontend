@@ -7,6 +7,8 @@ import  LoginForm from "../components/LoginForm";
 import { fakeApi,logOut,setLogOutLoading  } from "../reducers/user";
 import Link from "next/link";
 import Image from "next/image";
+import { UploadOutlined } from "@ant-design/icons";
+import Router from "next/router";
 
 const UserProfile = ({ userId: propUserId }) => {
   const dispatch = useDispatch();
@@ -142,6 +144,7 @@ const UserProfile = ({ userId: propUserId }) => {
         />
 
         {isMyProfile && (
+          <>
           <Button
             onClick={onLogOut}
             type="primary"
@@ -150,6 +153,17 @@ const UserProfile = ({ userId: propUserId }) => {
           >
             로그아웃
           </Button>
+          <div style={{ textAlign: "center", marginLeft: "10px" }}>
+          <Button
+            icon={<UploadOutlined />}
+            onClick={() => Router.push("/postupload")}
+            type="primary"
+            style={styles.button}
+            >
+            게시글 업로드
+          </Button>
+          </div>
+          </>
         )}
       </Card>
 
