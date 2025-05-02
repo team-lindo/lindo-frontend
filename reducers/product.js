@@ -10,6 +10,7 @@ import {
 import { TbShoe, TbBrandRedhat } from "react-icons/tb";
 import { BsHandbag } from "react-icons/bs";
 import shortId from 'shortid';
+
 export const categories = [
   { name: "ALL", icon: BiCloset },
   { name: "아우터", icon: GiLabCoat },

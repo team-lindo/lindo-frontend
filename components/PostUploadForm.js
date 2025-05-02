@@ -2,8 +2,12 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import Image from 'next/image';
 import TaggableImageUploader from './TaggableImageUploader';
+import { useDispatch } from 'react-redux';
+import { updateProduct } from '../reducers/product';  
+import { addPost } from '../reducers/post';           
 
 const PostUploadForm = () => {
+  const dispatch = useDispatch();
   const clothes = useSelector((state) => state.product.initialClothes);
   const [selected, setSelected] = useState([]);
   const [imageData, setImageData] = useState(null); 
@@ -12,16 +16,31 @@ const PostUploadForm = () => {
   const [activeCategory] = useState('아우터');
   const [waitingTagItem, setWaitingTagItem] = useState(null);
   
-
 // 게시 시 데이터 구조
 const handleSubmit = () => {
+  dispatch(updateProduct({
+    productName: '코트',
+    brand: '무신사',
+    price: 99000,
+    size: 'L',
+    images: selected.map(i => ({ src: i.url })),
+  }));
   const postData = {
-   // image: imageFile, // 실제 구현에선 FormData 처리 필요
     content,
-    //tags: selectedTags,
-    tags
+    tags,
+    products: selected.map((item) => ({
+      productId: item.uid,
+      productName: '선택된 아이템',
+      category: activeCategory,
+      brand: '선택 브랜드',
+      price: 30000,
+      size: '프리',
+      description: '',
+      imageTag: item.url,
+      siteUrl: '',
+    })),
   };
-  console.log(postData);
+  dispatch(addPost(postData));
 };
 
   const handleSelect = (item) => {

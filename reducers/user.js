@@ -216,7 +216,7 @@ const initialState = {
 
 export const logIn = createAsyncThunk('user/logIn', async (data, { rejectWithValue }) => {
   try {
-    const response = await axiosInstance.post('/user/login', data); // ✅ 이렇게
+    const response = await axiosInstance.post('/user/login', data);
     console.log("로그인 API 응답:", response.data);
     return response.data;
   } catch (error) {
@@ -225,99 +225,101 @@ export const logIn = createAsyncThunk('user/logIn', async (data, { rejectWithVal
   }
 });
 
-
-export const logOut = createAsyncThunk('user/logOut', async (_, thunkAPI) => {
-  try {
-    await fakeApi.logout();
-    return null;
-  } catch (error) {
-    return thunkAPI.rejectWithValue(error.message);
+export const logOut = createAsyncThunk(
+  "user/logOut",
+  async (_, { rejectWithValue }) => { 
+    try {
+      console.log("로그아웃 요청 보냄"); // 로그 확인
+      const response = await axiosInstance.post('/user/logout', {}, { withCredentials: true }); 
+      console.log("로그아웃 성공:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("로그아웃 실패:", error); // 에러 출력
+      return rejectWithValue(error.response?.data || "로그아웃 실패");
+    }
   }
-});
+);
 
-export const follow = createAsyncThunk('user/follow', async (userId, thunkAPI) => {
+export const follow = createAsyncThunk('user/follow', async (data, { rejectWithValue }) => {
   try {
-    const response = await fakeApi.follow(userId); // ✅ 전체 유저 정보 받음
+    const response = await axiosInstance.patch(`/user/${data}/follow`); // ✅ 전체 유저 정보 받음
     return response.data; // ✅ UserId 말고 유저 객체 전체 반환
   } catch (error) {
-    return thunkAPI.rejectWithValue(error.message);
+    return rejectWithValue(error.response?.data || error.message);
   }
 });
 
-
-export const unfollow = createAsyncThunk('user/unfollow', async (userId, thunkAPI) => {
+export const unfollow = createAsyncThunk('user/unfollow', async (data, { rejectWithValue }) => {
   try {
-    await fakeApi.unfollow(userId);
-    return { UserId: userId };
-  } catch (error) {
-    return thunkAPI.rejectWithValue(error.message);
-  }
-});
-
-export const signup = createAsyncThunk('user/signup', async (signUpData, thunkAPI) => {
-  try {
-    const response = await fakeApi.signup(signUpData);
+    await axiosInstance.delete(`/user/${data}/follow`);
     return response.data;
   } catch (error) {
-    return thunkAPI.rejectWithValue(error.message);
+    return rejectWithValue(error.response?.data || error.message);
   }
 });
 
-export const changeNickname = createAsyncThunk('user/changeNickname', async (data) => {
-  const response = await fakeApi.changeNickname(data);
-  return response.data;
+export const signup = createAsyncThunk('user/signup', async (data, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.post('/user', data);
+    return response.data;
+  } catch (error) {
+    return rejectWithValue(error.response?.data || error.message);
+  }
 });
 
 //현재 로그인된 유저의 팔로잉 목록을 불러오는 함수
 export const loadFollowings = createAsyncThunk(
   'user/loadFollowings',
-  async (_, thunkAPI) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const me = await fakeApi.me();
-      return { Followings: me.data.Followings };
+      const response  = await axiosInstance.get('/user/followings');
+      return { Followings: response.data.Followings };
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
 // 현재 로그인된 유저의 팔로워 목록을 불러오는 함수
 export const loadFollowers = createAsyncThunk(
   'user/loadFollowers',
-  async (_, thunkAPI) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const me = await fakeApi.me();
-      return { Followers: me.data.Followers };
+      const response = await axiosInstance.get('/user/followers');
+      return { Followers:response.data.Followers };
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
 // /현재 로그인한 사용자(me)의 정보를 가져옴
-export const loadMyInfo = createAsyncThunk(
-  'user/loadMyInfo',
-  async (_, thunkAPI) => {
-    try {
-      const me = await fakeApi.me();
-      return me.data;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
-    }
+export const loadMyInfo = createAsyncThunk('/user/loadMyInfo', async (_, { rejectWithValue }) => {
+  try {
+   //console.log("📢 loadMyInfo 요청 시작");
+    const response = await axiosInstance.get('/user');
+    console.log('=>(user.js:65) response', response.data);
+   // console.log("✅ API 응답:", response.data);
+    return response.data; 
+  } catch (error) {
+    console.error("유저 정보 가져오기 실패:", error);
+    return rejectWithValue(error.response?.data || "유저 정보 가져오기 실패");
   }
-);
+});
+
 
 //특정 유저의 정보를 가져옴.data는 해당 유저의 userId.예: 프로필 페이지에 들어갈 때 GET /user/5 호출해서 해당 유저 정보 받아옴
 export const loadUser = createAsyncThunk(
   'user/loadUser',
-  async (userId, thunkAPI) => {
+  async (data, { rejectWithValue }) => {
     try {
-      const user = await fakeApi.getUserById(userId);
-      if (!user) throw new Error('User not found');
-      return user.data;
+      const response = await axiosInstance.get(`/user/${userId}`);
+      if (!response) throw new Error('User not found');
+      return response.data;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data ||error.message);
     }
   }
 )
+
 export const fetchUserProfile = createAsyncThunk('user/fetchUserProfile', async (id, { rejectWithValue }) => {
   try {
     const response = await axiosInstance.get(`/user/profile/${id}`); 
@@ -439,15 +441,16 @@ const userSlice = createSlice({
       })
       .addCase(unfollow.fulfilled, (draft, action) => {
         draft.unfollowLoading = false;
+        const unfollowedId = action.payload?.UserId || action.payload?.id;
         if (draft.me) {
-          draft.me.Followings = draft.me.Followings.filter((v) => v.id !== action.payload.UserId);
+          draft.me.Followings = draft.me.Followings.filter((v) => v.id !== unfollowedId);
         }
         draft.unfollowDone = true;
       })
       .addCase(unfollow.rejected, (draft, action) => {
         draft.unfollowLoading = false;
         draft.unfollowError = action.payload;
-      })
+      })          
       .addCase(signup.pending, (draft) => {
         draft.signUpLoading = true;
         draft.signUpError = null;
@@ -461,39 +464,12 @@ const userSlice = createSlice({
         draft.signUpLoading = false;
         draft.signUpError = action.payload;
       })
-      .addCase(changeNickname.pending, (draft) => {
-        draft.changeNicknameLoading = true;
-        draft.changeNicknameError = null;
-        draft.changeNicknameDone = false;
-      })
-      .addCase(changeNickname.fulfilled, (draft, action) => {
-        if (draft.me && action.payload?.nickname) {
-          draft.me.nickname = action.payload.nickname;
-        }
-        draft.changeNicknameLoading = false;
-        draft.changeNicknameDone = true;
-      })
-      .addCase(changeNickname.rejected, (draft, action) => {
-        draft.changeNicknameLoading = false;
-        draft.changeNicknameError = action.payload;
-      })
+
       .addCase(likePost.pending, (draft, action) => {
         draft.likePostLoading = true;
         draft.likePostDone = false;
         draft.likePostError = null;
       })
-      // .addCase(likePost.fulfilled, (draft, action) => {
-      //   if (!draft.likedPosts) draft.likedPosts = []; // 안전장치
-      //   draft.likedPosts.push(action.payload);
-        
-      //   // if (!draft.me) draft.me = { likedPosts: [] };
-      //   // if (!draft.me.likedPosts) draft.me.likedPosts = [];
-      
-      //   // const exists = draft.me.likedPosts.find((p) => p.id === action.payload.id);
-      //   // if (!exists) {
-      //   //   draft.me.likedPosts.unshift(action.payload); // 좋아요 추가
-      //   // }
-      // })
       .addCase(likePost.fulfilled, (draft, action) => {
         if (!draft.likedPosts) draft.likedPosts = [];
         draft.likedPosts.push(action.payload);
@@ -540,7 +516,9 @@ const userSlice = createSlice({
       })
       .addCase(unbookmark.fulfilled, (draft, action) => {
         draft.me.bookmarkedPosts = draft.me.bookmarkedPosts.filter(
-          (p) => p.id !== action.payload
+        //  (p) => p.id !== action.payload
+        (p) => p.id !== action.payload.postId
+
         )
       })
       .addCase(loadPost.fulfilled, (draft, action) => {
@@ -584,33 +562,3 @@ const userSlice = createSlice({
 export const { setMe,setLogOutLoading,addPostToMe,removePostOfMe, setPosts  } = userSlice.actions;
 
 export default userSlice.reducer;
-
-/*            .addCase(bookmark.pending, (draft, action) => {
-        draft.bookmarkLoading = true;
-        draft.bookmarkDone = false;
-        draft.bookmarkError = null;
-      })
-      .addCase(bookmark.fulfilled, (draft, action) => {
-        draft.bookmarkLoading = false;
-        draft.bookmarkDone = true;
-        console.log('✅ fulfilled payload:', action.payload); // 여기에서도 찍어보기
-
-        draft.bookmarkedPosts.unshift(action.payload);
-      })
-      .addCase(bookmark.rejected, (draft, action) => {
-        draft.bookmarkLoading = false;
-        draft.bookmarkError = action.error;
-      })
-      .addCase(unbookmark.pending, (draft) => {
-        draft.bookmarkLoading = true;
-        draft.bookmarkDone = false;
-        draft.bookmarkError = null;
-      })
-      .addCase(unbookmark.fulfilled, (draft, action) => {
-        draft.bookmarkedPosts = draft.bookmarkedPosts.filter(
-          (post) => String(post.id) !== String(action.payload.postId)
-        );
-      })
-      .addCase(unbookmark.rejected, (draft, action) => {
-        draft.bookmarkError = action.payload || action.error.message;
-      })*/

@@ -15,6 +15,7 @@ export const getStaticPaths = async () => {
 //getStaticProps에서는 dispatch만 해서 서버 측에서 데이터를 미리 불러오고, 그걸로 빌드 타임에 페이지를 렌더링할 수 있도록
 export const getStaticProps = wrapper.getStaticProps((store) => async (context) => {
   const id = context.params?.id;
+  console.log("🧪 getStaticProps - id:", id);
 
   if (!id) {
     return { notFound: true };
