@@ -10,10 +10,13 @@ import Image from "next/image";
 import { UploadOutlined } from "@ant-design/icons";
 import Router from "next/router";
 
+
 const UserProfile = ({ userId: propUserId }) => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { me } = useSelector((state) => state.user);
+  const products = useSelector((state) => state.product.products); // ✅ Redux에 저장된 게시글
+
   const [userId, setUserId] = useState(null);
   const [viewedUser, setViewedUser] = useState(null);
   const [postsVisible, setPostsVisible] = useState(true);
@@ -21,30 +24,23 @@ const UserProfile = ({ userId: propUserId }) => {
   const [followingModalVisible, setFollowingModalVisible] = useState(false);
   const logOutLoading = useSelector((state) => state.user.logOutLoading);
 
-  // userId 설정 (router or props)
+  // userId 설정
   useEffect(() => {
     if (propUserId) {
       setUserId(propUserId);
     } else if (router.isReady && router.query.id) {
       const id = parseInt(router.query.id, 10);
-      if (!isNaN(id)) {
-        setUserId(id);
-      } else {
-        console.warn("잘못된 ID입니다:", router.query.id);
-      }
+      if (!isNaN(id)) setUserId(id);
     }
   }, [propUserId, router.isReady, router.query.id]);
 
-  // fetchUser
+  // 사용자 정보 가져오기
   useEffect(() => {
     if (!userId || !router.isReady) return;
-
     const fetchUser = async () => {
       try {
         const res = await fakeApi.getUserById(userId);
-        if (res?.data) {
-          setViewedUser(res.data);
-        }
+        if (res?.data) setViewedUser(res.data);
       } catch (err) {
         console.error("유저 정보 가져오기 실패:", err);
       }
@@ -53,30 +49,28 @@ const UserProfile = ({ userId: propUserId }) => {
   }, [userId, router.isReady]);
 
   const onLogOut = useCallback(async () => {
-    dispatch(setLogOutLoading(true)); // ✅ 로그아웃 로딩 시작
-    await dispatch(logOut()); // ✅ Redux에서 로그아웃 요청
-    router.push("/"); // ✅ 로그아웃 후 홈 화면으로 이동
+    dispatch(setLogOutLoading(true));
+    await dispatch(logOut());
+    router.push('/');
   }, [dispatch, router]);
-  
-  const styles = useMemo(
-    () => ({
-      cardContainer: { marginTop: "16px" },
-      button: { marginTop: "16px" },
-      avatar: { backgroundColor: "#87d068" },
-      clickableText: { cursor: "pointer", color: "blue" },
-    }),
-    []
-  );
 
- 
+  const styles = useMemo(() => ({
+    cardContainer: { marginTop: '16px' },
+    button: { marginTop: '16px' },
+    avatar: { backgroundColor: '#87d068' },
+    clickableText: { cursor: 'pointer', color: 'blue' },
+  }), []);
 
   const user = me.id === userId ? me : viewedUser;
-  const isMyProfile = useMemo(() => {
-    if (!me || !userId) return false;
-    return me.id === userId;
-  }, [me, userId]);
+  const isMyProfile = useMemo(() => me?.id === userId, [me, userId]);
+
   if (!me) return <LoginForm />;
   if (!user) return null;
+
+  // ✅ 게시글 통합: 내 프로필일 때만 products 포함
+  const allPosts = isMyProfile
+    ? [...(user.Posts || []), ...products]
+    : user.Posts || [];
 
   return (
     <>
@@ -85,39 +79,19 @@ const UserProfile = ({ userId: propUserId }) => {
         actions={
           isMyProfile
             ? [
-                <div
-                  key="post"
-                  style={styles.clickableText}
-                  onClick={() => setPostsVisible((prev) => !prev)}
-                >
-                  게시물<br />
-                  {user?.Posts?.length || 0}
+                <div key="post" style={styles.clickableText} onClick={() => setPostsVisible((p) => !p)}>
+                  게시물<br />{allPosts.length}
                 </div>,
-                <div
-                  key="follower"
-                  style={styles.clickableText}
-                  onClick={() => setFollowerModalVisible(true)}
-                >
-                  팔로워<br />
-                  {user?.Followers?.length || 0}
+                <div key="follower" style={styles.clickableText} onClick={() => setFollowerModalVisible(true)}>
+                  팔로워<br />{user?.Followers?.length || 0}
                 </div>,
-                <div
-                  key="following"
-                  style={styles.clickableText}
-                  onClick={() => setFollowingModalVisible(true)}
-                >
-                  팔로잉<br />
-                  {user?.Followings?.length || 0}
+                <div key="following" style={styles.clickableText} onClick={() => setFollowingModalVisible(true)}>
+                  팔로잉<br />{user?.Followings?.length || 0}
                 </div>,
               ]
             : [
-                <div
-                  key="post"
-                  style={styles.clickableText}
-                  onClick={() => setPostsVisible((prev) => !prev)}
-                >
-                  게시물<br />
-                  {user?.Posts?.length || 0}
+                <div key="post" style={styles.clickableText} onClick={() => setPostsVisible((p) => !p)}>
+                  게시물<br />{user?.Posts?.length || 0}
                 </div>,
                 <div key="closet">
                   <Link href={`/closet/${user.id}`}>
@@ -135,60 +109,47 @@ const UserProfile = ({ userId: propUserId }) => {
               </Avatar>
             </Link>
           }
-          title={
-            <Link href={`/user/${user.id}`}>
-              <span style={{ color: "inherit" }}>{user?.nickname || "Unknown"}</span>
-            </Link>
-          }
+          title={<Link href={`/user/${user.id}`}>{user?.nickname || "Unknown"}</Link>}
           description={isMyProfile ? "방가방가" : "유저 프로필"}
         />
 
         {isMyProfile && (
           <>
-          <Button
-            onClick={onLogOut}
-            type="primary"
-            loading={logOutLoading}
-            style={styles.button}
-          >
-            로그아웃
-          </Button>
-          <div style={{ textAlign: "center", marginLeft: "10px" }}>
-          <Button
-            icon={<UploadOutlined />}
-            onClick={() => Router.push("/postupload")}
-            type="primary"
-            style={styles.button}
+            <Button
+              onClick={onLogOut}
+              type="primary"
+              loading={logOutLoading}
+              style={styles.button}
             >
-            게시글 업로드
-          </Button>
-          </div>
+              로그아웃
+            </Button>
+            <div style={{ textAlign: 'center' }}>
+              <Button
+                icon={<UploadOutlined />}
+                onClick={() => Router.push('/postupload')}
+                type="primary"
+                style={styles.button}
+              >
+                게시글 업로드
+              </Button>
+            </div>
           </>
         )}
       </Card>
 
-      {postsVisible && user.Posts?.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", marginTop: "16px" }}>
-          {user.Posts.map((post) => (
-            <Link href={`/post/${post.id}`} key={post.id}>
-              <div
-                style={{
-                  width:"200px",
-                  height:"200px",
-                  overflow:"hidden",
-                  borderRadius: "8px",
-                  display: "block",
-                }}
-              >
-                <Image
-                  src={post.Images?.[0]?.src || "/default-image.png"}
-                  alt="post thumbnail"
-                  width={200}
-                  height={200}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-              </div>
-            </Link>
+      {/* ✅ 게시물 목록 표시 */}
+      {postsVisible && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginTop: '16px' }}>
+          {allPosts.map((post, index) => (
+            <div key={post.id || `local-${index}`} style={{ width: 200, height: 200, overflow: 'hidden', borderRadius: 8 }}>
+              <Image
+                src={post.image || post.Images?.[0]?.src || '/default-image.png'}
+                alt="게시물 썸네일"
+                width={200}
+                height={200}
+                style={{ objectFit: 'cover' }}
+              />
+            </div>
           ))}
         </div>
       )}

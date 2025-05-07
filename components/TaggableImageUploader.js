@@ -2,11 +2,12 @@ import { useState, useRef } from 'react';
 import Image from 'next/image';
 import shortId from 'shortid';
 
-const TaggableImageUploader = ({ clothes }) => {
-  const [images, setImages] = useState([]); // { id, url }
+const TaggableImageUploader = ({ clothes ,  waitingTagItem,
+  setWaitingTagItem,  images,
+  setImages,
+  tagsByImage,
+  setTagsByImage,}) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [tagsByImage, setTagsByImage] = useState({}); // { imageId: [ {uid, x, y, url} ] }
-  const [waitingTagItem, setWaitingTagItem] = useState(null);
   const [activeCategory, setActiveCategory] = useState('');
   const imageRef = useRef(null);
 
@@ -98,7 +99,7 @@ const TaggableImageUploader = ({ clothes }) => {
           style={{ position: 'relative', width: 400, height: 400, margin: '0 auto' }}
           onClick={handleImageClick}
         >
-          <Image
+          <img
             ref={imageRef}
             src={currentImage.url}
             alt="업로드 미리보기"

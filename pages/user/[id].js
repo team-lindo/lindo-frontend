@@ -140,7 +140,7 @@ const UserPage = () => {
                 <Image
                   src={post.Images?.[0]?.src || "/default-image.png"}
                   alt="post thumbnail"
-                  fill // ✅ 부모가 relative일 때 사용 가능
+                  fill //  부모가 relative일 때 사용 가능
                   style={{ objectFit: "cover" }}
                 />
                 </div>

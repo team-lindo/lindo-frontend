@@ -19,7 +19,7 @@ const storage = typeof window !== "undefined" ? storageSession : createNoopStora
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["user"], // 저장할 Redux state 설정 (예: user 정보만 저장)
+  whitelist: ["user" ,"product"], // 저장할 Redux state 설정 (예: user 정보만 저장)
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

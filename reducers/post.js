@@ -481,11 +481,11 @@ export const removePost = createAsyncThunk('post/removePost', async (postId, thu
     if (!postExists) {
       throw new Error(`Post with ID ${postId} does not exist.`);
     }
-
     return {
       postId: dummyResponse.removedPostId,
       message: dummyResponse.message,
     };
+    
   } catch (error) {
     console.error('Failed to remove post:', error.message);
     return thunkAPI.rejectWithValue(error.message);
