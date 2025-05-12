@@ -9,7 +9,7 @@ import {
 } from '@ant-design/icons';
 import { useEffect } from 'react';
 import Image from 'next/image';
-
+import Link from 'next/link';
 export default function BookmarkPage() {
   const me = useSelector((state) => state.user.me);
   useEffect(() => {
@@ -100,11 +100,27 @@ export default function BookmarkPage() {
       ),
       children: (
         <div style={{ padding: '20px 0' }}>
-          {likedPosts.length > 0 ? (
-            likedPosts.map((post) => <PostCard key={post.id} post={post} />)
-          ) : (
-            <Empty description="좋아요한 게시글이 없습니다." />
-          )}
+{likedPosts.length > 0 ? (
+  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+    {likedPosts.map((post) => (
+      <div key={post.id}>
+        <Link href={`/post/${post.id}` } legacyBehavior>
+          <a>
+            <img
+              src={post.thumbnail || post.Images?.[0]?.src || '/default-thumb.jpg'}
+              alt="썸네일"
+              style={{ width: 200, height: 200, objectFit: 'cover' }}
+            />
+          </a>
+        </Link>
+      </div>
+    ))}
+  </div>
+) : (
+  <Empty description="좋아요한 게시글이 없습니다." />
+)}
+
+
         </div>
       ),
     },

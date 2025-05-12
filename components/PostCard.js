@@ -15,7 +15,9 @@ function PostCard({ post }) {
             hoverable
             cover={
               <div style={{ overflow: 'hidden', borderRadius: '16px' }}>
-                <PostImages images={post.Images} />
+                <PostImages images={post.Images} 
+             //    taggedProductsByImage={post.taggedProductsByImage}
+                />
               </div>
             }
             style={{

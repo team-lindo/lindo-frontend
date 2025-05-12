@@ -8,7 +8,7 @@ import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import '../styles/globals.css';
 import { setMe } from "../reducers/user";
-
+import { loadMyInfo } from '../reducers/user'; 
 // ✅ AppInitializer 컴포넌트 분리
 function AppInitializer() {
   const dispatch = useDispatch();
@@ -19,13 +19,15 @@ function AppInitializer() {
       try {
         const user = JSON.parse(saved);
         dispatch(setMe(user));
+        dispatch(loadMyInfo()); // 로컬스토리지 복원 후 서버에서 유효성 검증
       } catch (e) {
         console.error("me 복구 실패", e);
       }
+    } else {
+      dispatch(loadMyInfo()); // 저장된 게 없을 경우 바로 요청
     }
-  }, [dispatch]);
-
-  return null;
+  }, []);
+  
 }
 
 function NodeBird({ Component, ...rest }) {

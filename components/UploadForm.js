@@ -3,9 +3,8 @@ import { Form, Input, Button, Select, Typography, Upload, Row, Col, Tag, Tooltip
 import ImgCrop from "antd-img-crop";
 import PropTypes from "prop-types";
 import { useState } from "react";
-//import { updateProduct } from "../reducers/product";
-import { addPost } from "../reducers/post";
-import { addPostToMe } from "../reducers/user";
+import { updateProduct,addProduct } from "../reducers/product";
+
 import shortId from "shortid";
 import { useRouter } from "next/router";
 import { UploadOutlined } from "@ant-design/icons";
@@ -63,17 +62,15 @@ const UploadForm = ({ me }) => {
       products: [product],
     };
 
-    const result = await dispatch(addPost(post));
+    const result = await dispatch(addProduct(product));
 
     if (result.meta.requestStatus === "fulfilled") {
-      dispatch(addPostToMe(post.id));
-      message.success("게시물이 업로드되었습니다!");
-      router.push("/");
+      message.success("상품이 옷장에 등록되었습니다!");
+      router.push("/closet"); // 옷장 페이지로 이동
     } else {
-      message.error("게시물 추가 중 오류가 발생했습니다.");
+      message.error("상품 등록 중 오류가 발생했습니다.");
     }
-  };
-
+    
   const onChange = ({ fileList: newFileList }) => {
     setFileList(newFileList);
   };

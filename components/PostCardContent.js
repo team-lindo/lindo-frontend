@@ -50,6 +50,8 @@ const PostCardContent = ({
   }, [postData, onCancelUpdate]);
 
   // postData가 문자열인지 확인하고 안전하게 처리
+
+  // 문자열 중 #해시태그 자동 링크 변환
   const renderPostContent = useCallback(() => {
     if (typeof postData !== 'string') {
       console.error('postData는 문자열이어야 합니다.', postData);
@@ -57,18 +59,17 @@ const PostCardContent = ({
     }
 
     return postData.split(/(#[^\s#]+)/g).map((v, i) => {
-      // 해쉬태그인 경우
       if (v.match(/(#[^\s#]+)/)) {
         return (
           <Link href={`/hashtag/${v.slice(1)}`} prefetch={false} key={i}>
-            {v}
+            <span style={{ color: 'blue' }}>{v}</span>
           </Link>
         );
       }
-      // 일반 텍스트 반환
       return v;
     });
   }, [postData]);
+
 
   return (
     <div>

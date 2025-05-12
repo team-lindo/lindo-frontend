@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useState,useMemo, useEffect   } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Image from 'next/image';
 import TaggableImageUploader from './TaggableImageUploader';
-import {
-  addProduct, setTagsByImage,
-  resetProductState
-} from '../reducers/product';
+import { addPost,uploadImage } from '../reducers/post'; 
+import { addPostToMe,fetchUserProfile ,} from '../reducers/user'; 
 import { useRouter } from 'next/router';
 import { message } from 'antd';
+import { fetchProduct } from "../reducers/product";
+
 
 const PostUploadForm = () => {
   const router = useRouter(); 
@@ -15,43 +15,81 @@ const PostUploadForm = () => {
   const clothes = useSelector((state) => state.product.initialClothes);
   const [selected, setSelected] = useState([]);
   const [imageList, setImageList] = useState([]);
-  const [tags, setTags] = useState([]);
-  //const [tagsByImage, setTagsByImage] = useState({});
-  const [tagsByImage, setLocalTagsByImage] = useState({}); 
+  const [hashtags, setHashtags] = useState([]); 
+  const [taggedProductsByImage, setTaggedProductsByImage] = useState({}); // 기존 tagsByImage  
   const [content, setContent] = useState('');
   const [waitingTagItem, setWaitingTagItem] = useState(null);
-
+  const { me , profileUser} = useSelector((state) => state.user);
+  
+  const [imageFiles, setImageFiles] = useState([]);
+const [userId, setUserId] = useState(me?.id ?? null); // ✅ me가 있으면 바로 userId 세팅
+const user = useMemo(() => {
+  if (!me || !userId) return null;
+  return me.id === userId ? me : profileUser;
+}, [me, profileUser, userId]);
   // ✅ 게시 시 호출되는 함수 내부에 dispatch 코드 포함
-  const handleSubmit = () => {
-    const postData = {
+  const handleSubmit = async () => {
+   // const taggedProducts = Object.values(taggedProductsByImage).flat();
+    // 옷장 전체 펼치기
+const allClothes = Object.values(clothes).flat();
+
+// 태그에 상품 정보 주입
+const taggedProducts = Object.values(taggedProductsByImage).flat().map((tag) => {
+  const product = allClothes.find((item) => item.uid === tag.uid);
+  return {
+    ...tag,
+    name: product?.name || '이름 없음',
+    price: product?.price || 0,
+    size: product?.size || 'N/A',
+    url: product?.url || '',
+  };
+});
+
+   
+   const extractedTags = content.match(/#[^\s#]+/g)?.map(tag => tag.slice(1)) || [];
+  
+    // ✅ 최종적으로 Redux에 넣을 게시글 객체
+    const newPost = {
+  
+      user: me, 
+      id: Date.now(), // 고유 ID
       content,
       images: imageList,
-      tags,
-      tagsByImage,
+      hashtags: extractedTags,
+      taggedProducts,
+      User: { id: me?.id ?? 1, nickname: me?.nickname ?? '익명' },
+      Comments: [],
+      createdAt: new Date().toISOString(),
     };
-    console.log("게시할 데이터:", postData);
-
-    // ✅ Redux에 products 추가
-    imageList.forEach((img) => {
-      dispatch(addProduct({
-        id: img.id,
-        image: img.url,
-        tags: tagsByImage[img.id] || [],
-      }));
-    });
-
-    // ✅ 태그 정보 전역 저장
-    dispatch(setTagsByImage(tagsByImage));
-
-    // ✅ 초기화
-    dispatch(resetProductState());
-    message.success(' 게시가 완료되었습니다!', 1.5);
   
-    setTimeout(() => {
-      router.push('/mypage');
-    }, 1500); // 알림 표시 후 페이지 이동
-  };
+    try {
+      // ✅ Redux에 직접 저장
+      const result = await dispatch(addPost(newPost));
+  
+      if (result.meta.requestStatus === 'fulfilled') {
+        // dispatch(addPostToMe(newPost));
+        // console.log("🧪 addPostToMe 직후 me.Posts:", [...(me?.Posts ?? [])]); // 🔍 상태 확인
+        dispatch(fetchUserProfile(me.id));
+        
 
+        message.success('게시글이 업로드되었습니다!');
+        console.log("me.Posts:", me?.Posts); // 게시글 객체 배열이 있는지
+console.log("user.Posts.length:", user?.Posts?.length); // 증가했는지
+
+        router.push('/mypage');
+      } else {
+        message.error(`업로드 실패: ${result.payload}`);
+      }
+    } catch (err) {
+      message.error('알 수 없는 오류로 업로드에 실패했습니다.');
+      console.error(err);
+    }
+  };
+  
+  useEffect(() => {
+    dispatch(fetchProduct());
+  }, [dispatch]);
+  
   const handleSelect = (item) => {
     setSelected(prev =>
       prev.find(i => i.uid === item.uid)
@@ -59,7 +97,28 @@ const PostUploadForm = () => {
         : [...prev, item]
     );
   };
-
+  const handleImageChange = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+  
+    const formData = new FormData();
+    Array.from(files).forEach((file) => formData.append('images', file));
+  
+    try {
+      const resultAction = await dispatch(uploadImage(formData));
+  
+      if (resultAction.type === uploadImage.fulfilled.type) {
+        const uploadedImages = resultAction.payload;
+        setImageList((prev) => [...prev, ...uploadedImages]);
+      } else {
+        message.error('이미지 업로드에 실패했습니다.');
+      }
+    } catch (err) {
+      console.error(err);
+      message.error('예상치 못한 오류가 발생했습니다.');
+    }
+  };
+  
   return (
     <>
       <div style={{ padding: 20 }}>
@@ -68,13 +127,14 @@ const PostUploadForm = () => {
           clothes={clothes}
           images={imageList}
           setImages={setImageList}
-          tagsByImage={tagsByImage}
-          setTagsByImage={setLocalTagsByImage} 
-          tags={tags}
-          setTags={setTags}
+          taggedProductsByImage={taggedProductsByImage}     // ✅
+          setTaggedProductsByImage={setTaggedProductsByImage}
+          hashtags={hashtags}                               // ✅
+          setHashtags={setHashtags}
           waitingTagItem={waitingTagItem}
           setWaitingTagItem={setWaitingTagItem}
         />
+
 
         {/* 선택된 아이템 미리보기 */}
         {selected.length > 0 && (
@@ -94,13 +154,17 @@ const PostUploadForm = () => {
           </div>
         )}
 
-        {/* 텍스트 입력 영역 */}
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="오늘의 코디를 소개해주세요!"
-          style={{ width: '100%', height: 100, marginTop: 20 }}
-        />
+
+  {/* 게시글 내용 입력 */}
+  <textarea
+    value={content}
+    onChange={(e) => setContent(e.target.value)}
+    placeholder="오늘의 코디를 소개해주세요!"
+    style={{ width: '100%', height: 100 }}
+  />
+
+</div>
+
 
         {/* 게시 버튼 */}
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 40 }}>
@@ -121,7 +185,7 @@ const PostUploadForm = () => {
             게시하기
           </button>
         </div>
-      </div>
+  
     </>
   );
 };

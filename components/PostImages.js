@@ -1,60 +1,93 @@
-import { useState } from 'react';
-import PropTypes from 'prop-types';
-import Slider from 'react-slick';
-import Image from 'next/image';
-import ImagesZoom from './ImagesZoom';
+import { useRef } from 'react';
+import Link from 'next/link';
+import { Popover } from 'antd';
 
-
-const PostImages = ({ images = [] }) => {
-  const [showImagesZoom, setShowImagesZoom] = useState(false);
-
-  const onZoom = () => {
-    setShowImagesZoom(true);
-  };
-  const onClose = () => {
-    setShowImagesZoom(false);
-  };
-
-  const settings = {
-    dots: true,
-    infinite: false,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    focusOnSelect: false, 
-  };
-
+const PostImages = ({ images = [], taggedProductsByImage = {} }) => {
   return (
     <>
-      {images.length > 0 ? (
-        <Slider {...settings}>
-          {images.map((image, index) => (
-            <div key={image.id || index}>
-              <Image
-                src={image.src || "/default-image.jpg"}                 alt={`Post image ${index + 1}`}
-                width={600}
-                height={400}
-                onClick={onZoom}
-                priority
+      {images.map((image) => {
+        const containerRef = useRef(null);
+
+        return (
+          <div
+            key={image.id}
+            style={{
+              marginBottom: '16px',
+              width: 'fit-content',
+            }}
+          >
+            <div
+              ref={containerRef}
+              style={{
+                position: 'relative',
+                display: 'inline-block',
+                overflow: 'visible', 
+              }}
+            >
+              <img
+                src={image.src}
+                alt="게시 이미지"
+                style={{
+                  display: 'block',
+                  width: '600px',
+                  height: '600px',
+                  objectFit: 'cover',
+                  borderRadius: '12px',
+                }}
               />
+
+{taggedProductsByImage?.[image.id]?.map((tag, idx) => {
+
+  console.log('tag.name:', tag.name);
+  console.log('tag.price:', tag.price);
+  console.log('tag.size:', tag.size);
+  console.log('🧷 tag 전체:', tag);
+
+  return (
+    <Link key={idx} href={`/product/${tag.uid}`} passHref>
+      <Popover
+        content={
+          <div>
+            <p style={{ margin: 0 }}>상품명: {tag.name}</p>
+            <p style={{ margin: '4px 0' }}>
+              ₩{tag.price?.toLocaleString()}
+            </p>
+            <p style={{ margin: 0 }}>사이즈: {tag.size}</p>
+          </div>
+        }
+        trigger="hover"
+        placement="top"
+        getPopupContainer={() => containerRef.current}
+      >
+        <a
+          style={{
+            position: 'absolute',
+            top: `${tag.y}%`,
+            left: `${tag.x}%`,
+            backgroundColor: 'white',
+            color: 'red',
+            padding: '4px 8px',
+            borderRadius: '8px',
+            fontSize: '12px',
+            cursor: 'pointer',
+            zIndex: 10,
+            whiteSpace: 'nowrap',
+            textDecoration: 'none',
+          }}
+        >
+          🔗
+        </a>
+      </Popover>
+    </Link>
+  );
+})}
+
             </div>
-          ))}
-        </Slider>
-      ) : (
-        <div>No Images Available</div>
-      )}
-      {showImagesZoom && <ImagesZoom images={images} onClose={onClose} />}
+          </div>
+        );
+      })}
     </>
   );
-};
-
-PostImages.propTypes = {
-  images: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]), // id 추가
-      src: PropTypes.string.isRequired,
-    })
-  ),
 };
 
 export default PostImages;

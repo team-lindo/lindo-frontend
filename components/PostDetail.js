@@ -26,7 +26,7 @@ import {
   loadPost,
   addPostToMainPosts 
 } from '../reducers/post';
-import { removePostOfMe } from '../reducers/user';
+//import { removePostOfMe } from '../reducers/user';
 import Link from "next/link";
 
 moment.locale('ko');
@@ -110,7 +110,7 @@ function PostDetail() {
   // const isLiked = me?.likedPosts?.some((liked) => {
   //   return (liked.PostId ?? liked.id) === post.id;
   // });
-  const isLiked = me?.likedPosts?.some((liked) => liked.id === post.id);
+  const isLiked = me?.likedPosts?.some((liked) => liked &&  liked.id === post.id);
 
   
   
@@ -152,14 +152,14 @@ function PostDetail() {
     async (postId) => {
       if (!me) return alert('로그인이 필요합니다.');
       try {
-        await dispatch(removePost(postId));
-        dispatch(removePostOfMe(postId));
+        await dispatch(removePost(postId)); // ✅ 서버 삭제 + Redux 상태 동시 처리
       } catch (err) {
         console.error('Failed to remove post:', err);
       }
     },
     [me, dispatch]
   );
+  
 
   const isBookmarked = useMemo(() => {
     if (!post) return false;
@@ -211,8 +211,13 @@ function PostDetail() {
       <AppLayout>
         <div style={{ margin: '20px auto', maxWidth: '600px' }}>
           <Card
-            cover={post.Images?.length > 0 && <PostImages images={post.Images} />}
-            actions={[
+            cover={post.Images?.length > 0 && (
+              <PostImages
+                  images={post.Images}
+                taggedProductsByImage={post.taggedProductsByImage}
+                />
+              )}         
+       actions={[
               isBookmarked ? (
                 <BookOutlined key="bookmark" style={{ color: '#1890ff' }} onClick={onBookMark} />
               ) : (

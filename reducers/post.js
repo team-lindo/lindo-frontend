@@ -3,8 +3,8 @@ import { HYDRATE } from 'next-redux-wrapper';
 import shortId from 'shortid';
 import { faker } from '@faker-js/faker';
 import _ from 'lodash';
-import { fakeApi } from './user';
-export const generateDummyPost = (number) =>
+import { fakeApi,addPostToMe,fetchPostsByTaggedProduct ,getTaggedProductsByImage  } from './user';
+/*export const generateDummyPost = (number) =>
   Array(number)
     .fill()
     .map(() => {
@@ -32,7 +32,7 @@ export const generateDummyPost = (number) =>
           src: product.imageTag,
           fetchPriority: "auto",
           productInfo: `${product.brand} - ${product.productName} / ${product.price}원 / ${product.size}`,
-          siteUrl: product.siteUrl,
+          //siteUrl: product.siteUrl,
         })),
       ];
 
@@ -55,14 +55,24 @@ export const generateDummyPost = (number) =>
         ],
       };
     });
-//console.log("Generated Dummy Posts Array:", generateDummyPost(10)); 
+console.log("Generated Dummy Posts Array:", generateDummyPost(10)); 
+*/
+
+export const generateMinimalPosts = (count = 10 , userId,) =>
+  Array(count).fill().map(() => ({
+    id: shortId.generate(),
+    thumbnail: faker.image.url() || '/default-thumbnail.png',
+    userId,
+  }));
+
 
 export const initialState = {
   //게시글 작성마다 mainPosts 앞에 추가됨
   //댓글은 게시글의 id를 찾고 Comments로 접근함함
   mainPosts:  [],
   //mainPosts: generateDummyPost(10),  
- //posts: [],
+  posts: [],
+  taggedPosts: [],
   imagePaths: [],
   hasMorePosts: true,
   likePostLoading: false,
@@ -95,15 +105,17 @@ export const initialState = {
   bookmarkLoading: false,
   bookmarkDone: false,
   bookmarkError: null,
+  fetchTaggedPostsLoading: false,
+  fetchTaggedPostsError: null,
 };
 
 
 export const loadHashtagPosts = createAsyncThunk(
   'post/loadHashtagPosts',
-  _.throttle(async ({ lastId, tag }, thunkAPI) => {
+  _.throttle(async ({ lastId, hashtag }, thunkAPI) => {
     return new Promise((resolve) => {
       setTimeout(() => {
-      //  console.log(`Fetching hashtag posts for: ${tag}, lastId: ${lastId}`);
+        console.log(`Fetching hashtag posts for: ${hashtag}, lastId: ${lastId}`);
         const dummyPosts = generateDummyPost(10);
         resolve({
           posts: dummyPosts,
@@ -116,19 +128,20 @@ export const loadHashtagPosts = createAsyncThunk(
 
 export const loadUserPosts = createAsyncThunk(
   'post/loadUserPosts',
-  _.throttle(async ({ lastId, id }, thunkAPI) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-      //  console.log(`Fetching user posts for userId: ${id}, lastId: ${lastId}`);
-        const dummyPosts = generateDummyPost(10);
-        resolve({
-          posts: dummyPosts,
-          hasMorePosts: dummyPosts.length === 10, 
-        });
-      }, 1000);
-    });
-  }, 5000) 
+  async ({ id }, thunkAPI) => {
+    try {
+      const res = await fakeApi.getUserById(id); // ✅ 해당 유저 데이터 가져오기
+      const posts = res.data?.Posts || [];        // ✅ 그 유저의 게시글만 추출
+      return {
+        posts,
+        hasMorePosts: false,
+      };
+    } catch (err) {
+      return thunkAPI.rejectWithValue(err.message);
+    }
+  }
 );
+
 
   /*initialState.mainPosts = initialState.mainPosts.concat(
     Array(20).fill().map(() => {
@@ -437,6 +450,8 @@ export const loadUserPosts = createAsyncThunk(
         };
 
         console.log(" Returning newPost:", newPost);
+        thunkAPI.dispatch(addPostToMe(newPost));
+    
         return newPost;
     } catch (error) {
         console.error("❌ Error in addPost:", error.message);
@@ -451,7 +466,7 @@ export const loadUserPosts = createAsyncThunk(
       id: shortId.generate(),
       User: {
         id: 2,
-        nickname: '삼색이',
+        nickname: 'dummy',
       },
       content: data.content,
     };
@@ -542,18 +557,28 @@ export const likePost = createAsyncThunk(
   async (postId, { getState, rejectWithValue }) => {
     try {
       const state = getState();
-      const me = state.user.me;
+    //  const me = state.user.me;
       const post = state.post.mainPosts.find(p => String(p.id) === String(postId));
 
-      if (!post || !me) {
-        throw new Error('post 또는 사용자 정보가 없습니다.');
+      if (!post) {
+        throw new Error('post가 없습니다.');
       }
-
+      // return {
+      //  ...post,
+      //   PostId: postId,
+      //   thumbnail: post.thumbnail,
+      // //  UserId: me.id,
+      // };
       return {
-        ...post,
         PostId: postId,
-        UserId: me.id,
+        id: post.id,
+        content: post.content,
+        thumbnail: post.thumbnail, // 게시글 대표 이미지 (있다면)
+        Images: post.Images,       // 썸네일 대체용 (Images[0] 썸네일 사용 가능)
+        createdAt: post.createdAt,
+        User: post.User,           // 작성자 정보
       };
+      
     } catch (err) {
       console.error('🔥 likePost error:', err);
       return rejectWithValue(err.message);
@@ -652,6 +677,28 @@ export const unbookmark = createAsyncThunk( 'post/unbookmark', async (postId, th
     }
   }
 );
+// export const fetchPostsByTaggedProduct = createAsyncThunk(
+//   'post/fetchPostsByTaggedProduct',
+//   async (uid, { rejectWithValue }) => {
+//     try {
+//       const response = await axios.get(`/api/products/${uid}/posts`);
+//       return response.data; // Array<Post>
+//     } catch (error) {
+//       return rejectWithValue(error.response?.data || error.message);
+//     }
+//   }
+// );
+export const fetchPostsByTaggedProductThunk = createAsyncThunk(
+  'post/fetchPostsByTaggedProduct',
+  async (uid, { rejectWithValue }) => {
+    try {
+      const response = await fakeApi.fetchPostsByTaggedProduct(uid);
+      return response.data; // Array of posts
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
 
 const postSlice = createSlice({
   name: 'post',
@@ -698,14 +745,34 @@ const postSlice = createSlice({
         draft.loadPostDone = false;
         draft.loadPostError = null;
       })
+      // .addCase(loadPost.fulfilled, (draft, action) => {
+      //   draft.loadPostLoading = false;
+      //   draft.loadPostDone = true;
+      //  // draft.singlePost = action.payload;
+      //  const already = draft.mainPosts.find((p) => String(p.id) === String(action.payload.id));
+      //  if (!already) {
+      //    draft.mainPosts.unshift(action.payload); // 앞에 추가
+      //  }
+      // })
       .addCase(loadPost.fulfilled, (draft, action) => {
         draft.loadPostLoading = false;
         draft.loadPostDone = true;
-       // draft.singlePost = action.payload;
-       const already = draft.mainPosts.find((p) => String(p.id) === String(action.payload.id));
-       if (!already) {
-         draft.mainPosts.unshift(action.payload); // 앞에 추가
-       }
+      
+        const post = action.payload;
+      
+        // 이미지가 있고, taggedProductsByImage가 없다면 생성
+        if (post.Images && !post.taggedProductsByImage) {
+          post.taggedProductsByImage = getTaggedProductsByImage(post.Images);
+        }
+      
+        // singlePost에 저장
+        draft.singlePost = post;
+      
+        // mainPosts에 이미 없으면 추가
+        const already = draft.mainPosts.find((p) => String(p.id) === String(post.id));
+        if (!already) {
+          draft.mainPosts.unshift(post);
+        }
       })
       .addCase(loadPost.rejected, (draft, action) => {
         draft.loadPostLoading = false;
@@ -742,6 +809,9 @@ const postSlice = createSlice({
         draft.loadPostsLoading = false;
         draft.loadPostsDone = true;
         draft.mainPosts = draft.mainPosts.concat(action.payload);
+        draft.posts = action.payload.posts;
+        console.log('✅ 게시글 응답:', action.payload);
+
         draft.hasMorePosts = action.payload.length === 10;
       })
       .addCase(loadUserPosts.rejected, (draft, action) => {
@@ -848,13 +918,17 @@ const postSlice = createSlice({
           draft.mainPosts = [];
         }
       
-        // postId와 일치하는 게시물 제거
+        //  mainPosts에서 postId와 일치하는 게시물 제거
         draft.mainPosts = draft.mainPosts.filter((v) => String(v.id) !== String(action.payload.postId));
-      
-        //console.log('After removing post:', draft.mainPosts);
-      })
+         //console.log('After removing post:', draft.mainPosts);
+      //  me.Posts에서도 제거 (로그인 유저의 게시물 목록)
+      if (draft.me?.Posts) {
+        draft.me.Posts = draft.me.Posts.filter((v) => v.id !== postId);
+      }
+            })
   
       .addCase(removePost.rejected, (draft, action) => {
+        console.error('게시글 삭제 실패:', action.payload);
         draft.removePostLoading = false;
         draft.removePostError = action.error;
       })
@@ -892,7 +966,18 @@ const postSlice = createSlice({
         draft.uploadImagesLoading = false;
         draft.uploadImagesError = action.error;
       })
-
+      .addCase(fetchPostsByTaggedProductThunk.pending, () => {
+        draft.fetchTaggedPostsLoading = true;
+        draft.fetchTaggedPostsError = null;
+      })
+      .addCase(fetchPostsByTaggedProductThunk.fulfilled, (draft, action) => {
+        draft.fetchTaggedPostsLoading = false;
+        draft.taggedPosts = action.payload;
+      })
+      .addCase(fetchPostsByTaggedProductThunk.rejected, (draft, action) => {
+        draft.fetchTaggedPostsLoading = false;
+        draft.fetchTaggedPostsError = action.payload;
+      })
   },
 })
 

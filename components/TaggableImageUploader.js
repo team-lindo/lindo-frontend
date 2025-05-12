@@ -2,11 +2,17 @@ import { useState, useRef } from 'react';
 import Image from 'next/image';
 import shortId from 'shortid';
 
-const TaggableImageUploader = ({ clothes ,  waitingTagItem,
-  setWaitingTagItem,  images,
+const TaggableImageUploader = ({
+  clothes,
+  waitingTagItem,
+  setWaitingTagItem,
+  images,
   setImages,
-  tagsByImage,
-  setTagsByImage,}) => {
+  taggedProductsByImage,
+  setTaggedProductsByImage,
+  hashtags,
+  setHashtags
+}) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [activeCategory, setActiveCategory] = useState('');
   const imageRef = useRef(null);
@@ -14,7 +20,7 @@ const TaggableImageUploader = ({ clothes ,  waitingTagItem,
   const handleFiles = (fileList) => {
     const newImages = Array.from(fileList).map(file => ({
       id: shortId.generate(),
-      url: URL.createObjectURL(file)
+      url: URL.createObjectURL(file),
     }));
     setImages(prev => [...prev, ...newImages]);
   };
@@ -26,9 +32,7 @@ const TaggableImageUploader = ({ clothes ,  waitingTagItem,
     }
   };
 
-  const onDragOver = (e) => {
-    e.preventDefault();
-  };
+  const onDragOver = (e) => e.preventDefault();
 
   const handleFileInputChange = (e) => {
     if (e.target.files?.length) {
@@ -38,40 +42,54 @@ const TaggableImageUploader = ({ clothes ,  waitingTagItem,
 
   const handleImageClick = (e) => {
     if (!waitingTagItem || !imageRef.current || !images[selectedIndex]) return;
-
+  
     const rect = imageRef.current.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
-
+  
     const currentImageId = images[selectedIndex].id;
-    setTagsByImage(prev => ({
+  
+    // ✅ 여기에 제대로 된 newTag를 생성!
+    const newTag = {
+      uid: waitingTagItem.uid,
+      url: waitingTagItem.url,
+      name: waitingTagItem.name,
+      price: waitingTagItem.price,
+      size: waitingTagItem.size,
+      x,
+      y,
+    };
+  
+    // ✅ 이 시점에서 정확하게 정보가 들어감!
+    setTaggedProductsByImage((prev) => ({
       ...prev,
-      [currentImageId]: [...(prev[currentImageId] || []), { ...waitingTagItem, x, y }]
+      [currentImageId]: [...(prev[currentImageId] || []), newTag],
     }));
+  
     setWaitingTagItem(null);
   };
-
+  
   const removeTag = (imageId, uid) => {
-    setTagsByImage(prev => ({
+    setTaggedProductsByImage(prev => ({
       ...prev,
-      [imageId]: prev[imageId].filter(tag => tag.uid !== uid)
+      [imageId]: prev[imageId].filter(tag => tag.uid !== uid),
     }));
   };
 
   const removeImage = (index) => {
     const imageId = images[index].id;
     const newImages = images.filter((_, i) => i !== index);
-    const newTags = { ...tagsByImage };
+    const newTags = { ...taggedProductsByImage };
     delete newTags[imageId];
     setImages(newImages);
-    setTagsByImage(newTags);
+    setTaggedProductsByImage(newTags);
     if (selectedIndex >= newImages.length) {
       setSelectedIndex(Math.max(newImages.length - 1, 0));
     }
   };
 
   const currentImage = images[selectedIndex];
-  const currentTags = tagsByImage[currentImage?.id] || [];
+  const currentTags = taggedProductsByImage[currentImage?.id] || [];
 
   return (
     <div style={{ padding: 20 }}>
@@ -93,7 +111,7 @@ const TaggableImageUploader = ({ clothes ,  waitingTagItem,
         <input type="file" accept="image/*" multiple onChange={handleFileInputChange} />
       </div>
 
-      {/* 이미지 선택 + 태깅 */}
+      {/* 이미지 선택 태깅 */}
       {currentImage && (
         <div
           style={{ position: 'relative', width: 400, height: 400, margin: '0 auto' }}
@@ -232,7 +250,11 @@ const TaggableImageUploader = ({ clothes ,  waitingTagItem,
         {clothes[activeCategory]?.map((item) => (
           <div
             key={item.uid}
-            onClick={() => setWaitingTagItem(item)}
+            onClick={() =>{
+              console.log('👕 선택된 아이템:', item); // ✅ 이걸로 확인
+              setWaitingTagItem(item)
+            }
+    }
             style={{
               border: waitingTagItem?.uid === item.uid ? '2px solid blue' : '1px solid #ddd',
               padding: 4,
@@ -243,6 +265,7 @@ const TaggableImageUploader = ({ clothes ,  waitingTagItem,
           </div>
         ))}
       </div>
+
     </div>
   );
 };

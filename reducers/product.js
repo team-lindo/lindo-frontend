@@ -25,10 +25,20 @@ export const categories = [
 
 export const initialClothes = {
   아우터: [
-    { uid: shortId.generate(), url: "/images/coat1.jpg" },
-    { uid: shortId.generate(), url: "/images/coat2.jpg" },
-    { uid: shortId.generate(), url: "/images/jacket1.jpg" },
-    { uid: shortId.generate(), url: "/images/jacket2.jpg" },
+    { uid:"a1", url: "/images/coat1.jpg", name: "봄 코트",
+      price: 89000,
+      size: "L", },
+    { uid: "a2", url: "/images/coat2.jpg", name: " 코트",
+      price: 97000,
+      size: "xl", },
+    { uid: "a3", url: "/images/jacket1.jpg",
+      name: "자켓",
+      price: 189000,
+      size: "L",
+     },
+    { uid:"a4", url: "/images/jacket2.jpg",  name: "여름 자켓",
+      price: 289000,
+      size: "L", },
   ],
   상의: [
     { uid: shortId.generate(), url: "/images/sweater1.jpg" },
@@ -78,6 +88,25 @@ export const fetchProduct = createAsyncThunk(
   }
 );
 
+
+/* addProduct 연동동
+export const addProduct = createAsyncThunk('product/addProduct', async (product, thunkAPI) => {
+  try {
+    const response = await axiosInstance.post('/product', product); // 서버 연동 시
+    return response.data;
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error.response?.data || error.message);
+  }
+});*/
+export const addProduct = createAsyncThunk('product/addProduct', async (product, thunkAPI) => {
+  try {
+    const response = await axiosInstance.post('/product', product); // 서버 연동 시
+    return response.data;
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error.response?.data || error.message);
+  }
+});
+
 // 초기 상태 정의
 const initialState = {
   product: dummyProduct,         // 현재 단일 제품
@@ -107,11 +136,6 @@ const productSlice = createSlice({
         images: updatedImages.length > 0 ? updatedImages : draft.product.images
       };
     },
-
-    addProduct: (draft, action) => {
-      draft.products.push(action.payload);
-    },
-
     removeProduct: (draft, action) => {
       draft.products = draft.products.filter(p => p.id !== action.payload);
     },
@@ -148,7 +172,6 @@ const productSlice = createSlice({
 // 액션 및 리듀서 export
 export const {
   updateProduct,
-  addProduct,
   removeProduct,
   setTagsByImage,
   resetProductState,
