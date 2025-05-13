@@ -3,6 +3,7 @@ import { HYDRATE } from 'next-redux-wrapper';
 import shortId from 'shortid';
 import { faker } from '@faker-js/faker';
 import _ from 'lodash';
+import axiosInstance from '../api/axiosInstance'; 
 import { fakeApi,addPostToMe,fetchPostsByTaggedProduct ,getTaggedProductsByImage  } from './user';
 /*export const generateDummyPost = (number) =>
   Array(number)
@@ -112,373 +113,100 @@ export const initialState = {
 
 export const loadHashtagPosts = createAsyncThunk(
   'post/loadHashtagPosts',
-  _.throttle(async ({ lastId, hashtag }, thunkAPI) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        console.log(`Fetching hashtag posts for: ${hashtag}, lastId: ${lastId}`);
-        const dummyPosts = generateDummyPost(10);
-        resolve({
-          posts: dummyPosts,
-          hasMorePosts: dummyPosts.length === 10, // 무한 스크롤 가능 여부 설정
-        });
-      }, 1000);
-    });
-  }, 5000) // 5초 동안 한 번만 실행
+  async ({ lastId, hashtag }, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get('/api/posts/hashtag', {
+        params: { hashtag, lastId },
+      });
+      return response.data; // { posts: PostDTO[], hasMorePosts: boolean }
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
 );
+
 
 export const loadUserPosts = createAsyncThunk(
   'post/loadUserPosts',
-  async ({ id }, thunkAPI) => {
+  async ({ id, lastId }, { rejectWithValue }) => {
     try {
-      const res = await fakeApi.getUserById(id); // ✅ 해당 유저 데이터 가져오기
-      const posts = res.data?.Posts || [];        // ✅ 그 유저의 게시글만 추출
-      return {
-        posts,
-        hasMorePosts: false,
+      const response = await axiosInstance.get(`/api/users/${id}/posts`, {
+        params: { lastId },
+      });
+      return response.data; // ✅ { posts: PostDTO[], hasMorePosts: boolean }
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+//dispatch(loadUserPosts({ id: 3, lastId: 15 }));
+
+  
+export const fetchPosts = async (lastId) => {
+  try {
+    const response = await axiosInstance.get('/api/posts', {
+      params: { lastId },
+    });
+    return response.data; // { posts: [...], hasMorePosts: true/false }
+  } catch (error) {
+    throw new Error(error.response?.data || error.message);
+  }
+};
+export const throttledFetchPosts = _.throttle(fetchPosts, 5000); // 5초 제한  
+ 
+export const loadPosts = createAsyncThunk(
+  'post/loadPosts',
+  async (lastId, thunkAPI) => {
+    try {
+      const result = await throttledFetchPosts(lastId);
+      return result; // { posts: [...], hasMorePosts: true/false }
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+export const addPost = createAsyncThunk(
+  'post/addPost',
+  async (data, thunkAPI) => {
+    try {
+      // ✅ content와 Images만 서버에 전송 (DTO에 맞게)
+      const postData = {
+        content: data.content?.trim() || '설명이 없습니다.',
+        Images: Array.isArray(data.Images) ? data.Images : [],
       };
-    } catch (err) {
-      return thunkAPI.rejectWithValue(err.message);
+
+      const response = await axiosInstance.post('/api/post', postData);
+
+      const newPost = response.data; // 서버 응답 구조에 맞음
+      thunkAPI.dispatch(addPostToMe(newPost)); // ✅ 사용자 상태에도 반영
+
+      return newPost; // { id, User, content, Images, Comments, createdAt, updatedAt }
+    } catch (error) {
+      console.error('❌ Error in addPost:', error.response?.data || error.message);
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
     }
   }
 );
 
 
-  /*initialState.mainPosts = initialState.mainPosts.concat(
-    Array(20).fill().map(() => {
-      const content = faker.lorem.paragraph(); // faker 값 생성
-      console.log('Generated Content:', content); // 디버그 로그
-      return {
-        id: shortId.generate(),
-        User: {
-          id: shortId.generate(),
-          nickname: faker.person.fullName() || '익명 사용자',
-        },
-        content: content || '내용 없음', // 빈 값일 경우 기본값 설정
-        Images: [
-          {
-            src: faker.image.url() || '/default-image.png', // 이미지 URL 기본값
-          },
-        ],
-        Comments: [
-          {
-            User: {
-              id: shortId.generate(),
-              nickname: faker.person.fullName() || '익명 사용자',
-            },
-            content: faker.lorem.sentence() || '내용 없음', // 댓글 기본값
-          },
-        ],
-      };
-    })
-  );
- */ 
-  
-  const fetchPosts = async (lastId, thunkAPI) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const newPosts = generateDummyPost(10);
-        //console.log("Generated Dummy Posts:", newPosts); // ✅ 디버깅 로그 추가
-        resolve({
-          posts: newPosts,
-          hasMorePosts: newPosts.length === 10,
-        });
-      }, 1000);
-    });
-  };
-  
-  const throttledFetchPosts = _.throttle(fetchPosts, 5000); 
-  
-  export const loadPosts = createAsyncThunk("post/loadPosts", async (lastId, thunkAPI) => {
-    const result = await throttledFetchPosts(lastId, thunkAPI); 
-   // console.log("Thunk Result:", result); 
-    return result;
-  });
-  
-  export const loadPost = createAsyncThunk('post/loadPost', async ({ id }, thunkAPI) => {
-    try {
-      // 모든 유저 검색
-      const userIds = [1, 2, 3, 5]; // fakeApi에 등록된 사용자 ID
-  
-      for (const userId of userIds) {
-        const res = await fakeApi.getUserById(userId);
-        const user = res?.data;
-        if (!user || !Array.isArray(user.Posts)) continue;
-  
-        const post = user.Posts.find((p) => String(p.id) === String(id));
-        if (post) {
-          return {
-            ...post,
-            User: {
-              id: user.id,
-              nickname: user.nickname,
-            },
-            Comments: [], // 댓글도 비워서 리턴
-            Likers: [],
-          };
-        }
-      }
-  
-      // 해당 post가 없을 경우
-      return thunkAPI.rejectWithValue('해당 게시글을 찾을 수 없습니다.');
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
-    }
-  });
-  // export const loadPost = createAsyncThunk('post/loadPost', async (data, thunkAPI) => {
-  //   try {
-  //     const dummyPost = {
-  //       id: data?.id ?? shortId.generate(), // id가 없으면 새로 생성
-  //       User: {
-  //         id: 1,
-  //         nickname: 'test',
-  //       },
-  //       content: typeof data === 'object' ? data.content ?? '내용 없음' : data ?? '내용 없음', // 문자열/객체 모두 처리
-  //       Images: Array.isArray(data?.Images) ? data.Images : [],
-  //       Comments: Array.isArray(data?.Comments) ? data.Comments : [],
-  //       Likers: Array.isArray(data?.Likers) ? data.Likers : [], // ✅ 이 줄 추가!
 
-  //     };
-  
-  //     return dummyPost;
-  //   } catch (error) {
-  //     return thunkAPI.rejectWithValue(error.message);
-  //   }
-  // });
- /* export const addPost = createAsyncThunk('post/addPost', async (data, thunkAPI) => {
+export const addComment = createAsyncThunk(
+  'post/addComment',
+  async ({ postId, content }, thunkAPI) => {
     try {
-      console.log("🔍 Received data in addPost:", data);
-  
-      if (!data || typeof data !== "object") {
-        throw new Error("Invalid data format: data must be an object.");
-      }
-  
-      // 게시물 ID를 shortId로 유지
-      const postId = data.id ? data.id : shortId.generate();
-      
-      // 사용자 정보 처리 
-      if (!data.user || !data.user.id) {
-        throw new Error("Invalid user data: user ID is required.");
-      }
-      // 사용자 정보 기본값 처리
-      const user = {
-        id: data.user.id,  
-        nickname: data.user.nickname || "익명"
-    };
-      // 게시물 설명 기본값 처리
-      // const postDescription = typeof data.description === "string" && data.description.trim() !== ""
-      //   ? data.description
-      //   : "설명이 없습니다.";
-      const postContent = typeof data.description === "string" && data.description.trim() !== ""
-    ? data.description
-    : "설명이 없습니다.";
-
-  
-      // 이미지 배열 매핑
-      const images = Array.isArray(data.images)
-        ? data.images.map((src) => ({
-            src,
-            fetchPriority: "auto",
-            productInfo: "", // 일반 이미지에는 제품 정보 없음
-            siteUrl: "",
-          }))
-        : [];
-  
-      // 제품 정보 매핑
-      const products = Array.isArray(data.products)
-        ? data.products.map((product) => ({
-            postId: postId,
-            productId: product.productId || shortId.generate(), // productId 유지
-            productName: product.productName || "알 수 없음",
-            category: product.category || "기타",
-            brand: product.brand || "브랜드 없음",
-            price: product.price ?? 0,
-            size: product.size || "사이즈 미정",
-            description: product.description || "설명 없음",
-            
-            imageTag: product.imageTag || "",
-            siteUrl: product.siteUrl || "",
-          }))
-        : [];
-  
-      // 제품 이미지 추가 (각 제품 이미지가 이미지 배열에도 포함되도록 설정)
-      products.forEach((product) => {
-        images.push({
-          src: product.imageTag,
-          fetchPriority: "auto",
-          productInfo: `${product.brand} - ${product.productName} / ${product.price}원 / ${product.size}`,
-          siteUrl: product.siteUrl,
-        });
+      const response = await axiosInstance.post(`/api/post/${postId}/comment`, {
+        content, // 본문만 body에 포함
       });
-  
-      // 댓글 기본값 처리
-      const comments = Array.isArray(data.comments)
-        ? data.comments.map((comment) => ({
-            id: shortId.generate(),
-            User: { id: shortId.generate(), nickname: comment.nickname || "댓글 작성자" },
-            content: comment.text || "내용 없음",
-          }))
-        : [];
-  
-      // 최종적으로 반환할 게시물 객체
-      const newPost = {
-        id: postId,
-        User: user,
-        //content: postDescription,
-        content: postContent,
-        Images: images,
-        Comments: comments,
-        products: products, // 기존 `productInfo` 대신 `products` 배열 유지
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-  
-      console.log("Returning newPost:", newPost);
-      return newPost;
+
+      // 서버가 { postId, comment } 형식으로 응답한다고 가정
+      return response.data;
     } catch (error) {
-      console.error(" Error in addPost:", error.message);
-      return thunkAPI.rejectWithValue(error.message);
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
     }
-  });
-  */
-  export const addPost = createAsyncThunk('post/addPost', async (data, thunkAPI) => {
-    try {
-        console.log("🔍 Received data in addPost:", data);
-
-        if (!data || typeof data !== "object") {
-            throw new Error("Invalid data format: data must be an object.");
-        }
-
-        // 게시물 ID 유지
-        const postId = data.id || shortId.generate();
-        // console.log("🔍 Checking user data:", data.user);
-        // console.log("🔍 Checking user ID type:", typeof data.user.id);
-
-        // 사용자 정보 처리
-        if (!data.user || data.user.id == null) { 
-          throw new Error("Invalid user data: user ID is required.");
-        }
-        
-        const user = data.user ?? { id: shortId.generate(), nickname: "익명" }; // 기본값 설정
-         console.log("🔍 Checking data:", data);
-        // console.log("🔍 Checking user:", user);
-        
-        if (!user.id) { 
-          throw new Error("Invalid user data: user ID is required.");
-        }
-        
-
-        // 게시물 내용 처리
-        //console.log("🔍 Checking description:", data.description);
-        //console.log("🔍 Trimmed description:", data.description?.trim());
-        //console.log("🔍 Checking data:", data);
-       // console.log("🔍 Checking content:", data.content);
-       // console.log("🔍 Trimmed content:", data.content?.trim());
-        
-        // const postContent = typeof data.content === "string" && data.content.trim() !== ""
-        //     ? data.content
-        //     : "설명이 없습니다.";
-        // const postContent = data.description && typeof data.description === "string"
-        // ? data.description.trim()
-        // : "설명이 없습니다.";
-        const postContent = typeof data.content === "string" && data.content.trim() !== ""
-        ? data.content
-        : data.description && typeof data.description === "string"
-            ? data.description.trim()
-            : "설명이 없습니다.";
-
-      //  console.log("✅ Final postContent:", postContent);
-    
-     //   console.log("✅ Assigned postContent (before):", postContent); // 👈 여기서 값 확인
-    
-        // 이미지 배열 매핑
-        const images = Array.isArray(data.Images)
-            ? data.Images.map((image) => ({
-                src: image.src,
-                fetchPriority: "auto",
-                productInfo: image.productInfo || "",
-                siteUrl: image.siteUrl || "",
-            }))
-            : [];
-
-        // 제품 정보 매핑
-        const products = Array.isArray(data.products)
-            ? data.products.map((product) => ({
-                postId: data.id, // 기존 postId 유지
-                productId: product.productId || shortId.generate(),
-                productName: product.productName || "알 수 없음",
-                category: product.category || "기타",
-                brand: product.brand || "브랜드 없음",
-                price: product.price ?? 0,
-                size: product.size || "사이즈 미정",
-                description: product.description || "설명 없음",
-                imageTag: product.imageTag || "",
-                siteUrl: product.siteUrl || "",
-            }))
-            : [];
-
-        // 제품 이미지 추가 (중복 방지)
-        products.forEach((product) => {
-            if (!images.some(img => img.src === product.imageTag)) {
-                images.push({
-                    src: product.imageTag,
-                    fetchPriority: "auto",
-                    productInfo: `${product.brand} - ${product.productName} / ${product.price}원 / ${product.size}`,
-                    siteUrl: product.siteUrl,
-                });
-            }
-        });
-
-        // 댓글 기본값 처리
-        const Comments = Array.isArray(data.comments)
-            ? data.comments.map((comment) => ({
-                id: shortId.generate(),
-                User: { id: shortId.generate(), nickname: comment.nickname || "댓글 작성자" },
-                content: comment.text || "내용 없음",
-            }))
-            : [];
-
-        // 최종적으로 반환할 게시물 객체
-        const newPost = {
-            id: postId,
-            User: user,
-            content: postContent,
-            Images: images,
-            Comments: Comments,
-            products: products,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        };
-
-        console.log(" Returning newPost:", newPost);
-        thunkAPI.dispatch(addPostToMe(newPost));
-    
-        return newPost;
-    } catch (error) {
-        console.error("❌ Error in addPost:", error.message);
-        return thunkAPI.rejectWithValue(error.message);
-    }
-});
-
-
-  export const addComment = createAsyncThunk('post/addComment', async (data, thunkAPI) => {
-  try {
-    const dummyComment = {
-      id: shortId.generate(),
-      User: {
-        id: 2,
-        nickname: 'dummy',
-      },
-      content: data.content,
-    };
-
-    return {
-      postId: data.postId,
-      comment: dummyComment,
-    };
-  } catch (error) {
-    return thunkAPI.rejectWithValue(error.message);
   }
-});
+);
+//dispatch(addComment({ postId: 123, content: '멋진 코디네요!' }));
 
 export const removePost = createAsyncThunk('post/removePost', async (postId, thunkAPI) => {
   try {
@@ -507,187 +235,103 @@ export const removePost = createAsyncThunk('post/removePost', async (postId, thu
   }
 });
 
-// export const updatePost = createAsyncThunk('post/updatePost', async (data, thunkAPI) => {
-//   try {
-//     const updatedPost = {
-//       PostId: data.PostId,
-//       content: data.content,
-//     };
-//     return updatedPost;
-//   } catch (error) {
-//     return thunkAPI.rejectWithValue(error.message);
-//   }
-// });
+
 export const updatePost = createAsyncThunk(
-  "post/updatePost",
-  async (data, { rejectWithValue }) => {
+  'post/updatePost',
+  async ({ postId, content }, { rejectWithValue }) => {
     try {
-      // 비동기 요청처럼 setTimeout 사용
-      return await new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            PostId: data.PostId,
-            content: data.content,
-          });
-        }, 500); // 0.5초 후 응답 (서버처럼 보이게)
+      const response = await axiosInstance.patch(`/api/post/${postId}`, {
+        content,
       });
+
+      return response.data; // { postId, content, updatedAt }
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
-// export const likePost = createAsyncThunk('post/likePost', async (postId, { getState, rejectWithValue }) => {
-//   try {
-//     const state = getState(); // ✅ 여기서 state 선언
-//     const me = state.user.me;
-//     const post = state.post.mainPosts.find(p => p.id === postId);
-    
-//     // 예: 좋아요 정보 서버에 전달
-//     return {
-//       ...post,
-//       PostId: postId,
-//       UserId: me?.id,
-//     };
-//   } catch (err) {
-//     return rejectWithValue(err.message);
-//   }
-// });
 export const likePost = createAsyncThunk(
   'post/likePost',
-  async (postId, { getState, rejectWithValue }) => {
+  async (postId, { rejectWithValue }) => {
     try {
-      const state = getState();
-    //  const me = state.user.me;
-      const post = state.post.mainPosts.find(p => String(p.id) === String(postId));
-
-      if (!post) {
-        throw new Error('post가 없습니다.');
-      }
-      // return {
-      //  ...post,
-      //   PostId: postId,
-      //   thumbnail: post.thumbnail,
-      // //  UserId: me.id,
-      // };
-      return {
-        PostId: postId,
-        id: post.id,
-        content: post.content,
-        thumbnail: post.thumbnail, // 게시글 대표 이미지 (있다면)
-        Images: post.Images,       // 썸네일 대체용 (Images[0] 썸네일 사용 가능)
-        createdAt: post.createdAt,
-        User: post.User,           // 작성자 정보
-      };
-      
-    } catch (err) {
-      console.error('🔥 likePost error:', err);
-      return rejectWithValue(err.message);
-    }
-  }
-);
-
-
-export const unlikePost = createAsyncThunk('post/unlikePost', async (postId, thunkAPI) => {
-  try {
-    // 단순히 postId만 넘기면 충분 (지울 때는 ID만 있으면 됨)
-    return { PostId: postId };
-  } catch (error) {
-    return thunkAPI.rejectWithValue(error.message);
-  }
-});
-
-// export const likePost = createAsyncThunk('post/likePost', async (data, thunkAPI) => {
-//   try {
-//     const likedPost = {
-//       PostId: data,
-//       UserId: 1, // 예제 사용자 ID
-//     };
-//     return likedPost;
-//   } catch (error) {
-//     return thunkAPI.rejectWithValue(error.message);
-//   }
-// });
-
-// export const unlikePost = createAsyncThunk('post/unlikePost', async (data, thunkAPI) => {
-//   try {
-//     const unlikedPost = {
-//       PostId: data,
-//       UserId: 1, // 예제 사용자 ID
-//     };
-//     return unlikedPost;
-//   } catch (error) {
-//     return thunkAPI.rejectWithValue(error.message);
-//   }
-// });
-
-export const uploadImage = createAsyncThunk('post/uploadImage', async (data, thunkAPI) => {
-  try {
-    const uploadedImages = [
-      { id: shortId.generate(), src: '/dummy-image.png' }, // 더미 이미지 데이터
-    ];
-    return uploadedImages;
-  } catch (error) {
-    return thunkAPI.rejectWithValue(error.message);
-  }
-});
-
-export const bookmark = createAsyncThunk('post/bookmark', async (post, thunkAPI) => {
-  try {
-    if (!post || !post.content) {
-      throw new Error('Invalid post data');
-    }
-
-    const bookmarkedPost = {
-      id: shortId.generate(),
-      content: `RT: ${post.content}`,
-      User: {
-        id: shortId.generate(),
-        nickname: post.User?.nickname || '북마크 사용자',
-      },
-      Images: post.Images || [],
-      Comments: [],
-    };
-    return bookmarkedPost;
-  } catch (error) {
-    console.error('❌ bookmark thunk 오류:', error.message);
-    return thunkAPI.rejectWithValue(error.message);
-  }
-});
-
-
-export const unbookmark = createAsyncThunk( 'post/unbookmark', async (postId, thunkAPI) => {
-    try {
-    /*   const state = thunkAPI.getState();
-     const isBookmarked = state.post.bookmarkedPosts.some(
-        (post) => String(post.id) === String(postId)
-      );
-      if (!isBookmarked) {
-        throw new Error(`Post with ID ${postId} is not bookmarked.`);
-      }*/
-
-      const dummyResponse = {
-        message: 'Post unbookmarked successfully',
-        postId,
-      };
-
-      return dummyResponse;
+      const response = await axiosInstance.post(`/api/post/${postId}/like`);
+      return response.data; // 서버가 LikePostResponseDTO 반환
     } catch (error) {
-      console.error('Failed to unbookmark post:', error.message);
-      return thunkAPI.rejectWithValue(error.message);
+      console.error('🔥 likePost error:', error);
+      return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
-// export const fetchPostsByTaggedProduct = createAsyncThunk(
-//   'post/fetchPostsByTaggedProduct',
-//   async (uid, { rejectWithValue }) => {
-//     try {
-//       const response = await axios.get(`/api/products/${uid}/posts`);
-//       return response.data; // Array<Post>
-//     } catch (error) {
-//       return rejectWithValue(error.response?.data || error.message);
-//     }
-//   }
-// );
+//dispatch(likePost(123));
+export const unlikePost = createAsyncThunk(
+  'post/unlikePost',
+  async (postId, thunkAPI) => {
+    try {
+      const response = await axiosInstance.delete(`/api/post/${postId}/like`);
+      return response.data; // { postId: string }
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+
+export const uploadImage = createAsyncThunk(
+  'post/uploadImage',
+  async (images, thunkAPI) => {
+    try {
+      const formData = new FormData();
+
+      // 단일 File인지 배열인지 체크해서 FormData 구성
+      if (Array.isArray(images)) {
+        images.forEach((file) => formData.append('images', file));
+      } else {
+        formData.append('images', images);
+      }
+
+      const response = await axiosInstance.post('/api/upload/images', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      return response.data; // ✅ 서버가 [{ id, src }] 배열 반환
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+// 파일 업로드 버튼 등에서
+//dispatch(uploadImage(selectedFiles)); // File | File[]
+
+
+export const bookmark = createAsyncThunk(
+  'post/bookmark',
+  async (postId, thunkAPI) => {
+    try {
+      const response = await axiosInstance.post(`/api/post/${postId}/bookmark`);
+      return response.data; // 서버가 북마크된 게시글 객체 반환
+    } catch (error) {
+      console.error('❌ bookmark thunk 오류:', error.response?.data || error.message);
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+
+
+export const unbookmark = createAsyncThunk(
+  'post/unbookmark',
+  async (postId, thunkAPI) => {
+    try {
+      const response = await axiosInstance.delete(`/api/post/${postId}/bookmark`);
+      return response.data; // { message: '...', postId }
+    } catch (error) {
+      console.error('Failed to unbookmark post:', error.response?.data || error.message);
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
+    }
+  }
+)
 export const fetchPostsByTaggedProductThunk = createAsyncThunk(
   'post/fetchPostsByTaggedProduct',
   async (uid, { rejectWithValue }) => {
@@ -718,17 +362,7 @@ const postSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-     /* .addCase(HYDRATE, (draft, action) => {
-        draft.mainPosts = [...draft.mainPosts, ...action.payload.post.mainPosts];
-      })
-        */
-    /*  .addCase(HYDRATE, (draft, action) => {
-        console.log('HYDRATE Payload:', action.payload);
-      
-        draft.mainPosts = Array.isArray(action.payload.post?.mainPosts)
-          ? [...action.payload.post.mainPosts]
-          : draft.mainPosts;
-      })*/
+
           .addCase(HYDRATE, (draft, action) => {
            // console.log("HYDRATE Payload:", action.payload);
           
