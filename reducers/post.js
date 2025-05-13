@@ -197,7 +197,7 @@ export const loadUserPosts = createAsyncThunk(
   export const loadPost = createAsyncThunk('post/loadPost', async ({ id }, thunkAPI) => {
     try {
       // 모든 유저 검색
-      const userIds = [1, 2, 3, 5]; // fakeApi에 등록된 사용자 ID
+      const userIds = [1, 2, 3, 4,5]; // fakeApi에 등록된 사용자 ID
   
       for (const userId of userIds) {
         const res = await fakeApi.getUserById(userId);
@@ -342,123 +342,65 @@ export const loadUserPosts = createAsyncThunk(
   */
   export const addPost = createAsyncThunk('post/addPost', async (data, thunkAPI) => {
     try {
-        console.log("🔍 Received data in addPost:", data);
-
-        if (!data || typeof data !== "object") {
-            throw new Error("Invalid data format: data must be an object.");
-        }
-
-        // 게시물 ID 유지
-        const postId = data.id || shortId.generate();
-        // console.log("🔍 Checking user data:", data.user);
-        // console.log("🔍 Checking user ID type:", typeof data.user.id);
-
-        // 사용자 정보 처리
-        if (!data.user || data.user.id == null) { 
-          throw new Error("Invalid user data: user ID is required.");
-        }
-        
-        const user = data.user ?? { id: shortId.generate(), nickname: "익명" }; // 기본값 설정
-         console.log("🔍 Checking data:", data);
-        // console.log("🔍 Checking user:", user);
-        
-        if (!user.id) { 
-          throw new Error("Invalid user data: user ID is required.");
-        }
-        
-
-        // 게시물 내용 처리
-        //console.log("🔍 Checking description:", data.description);
-        //console.log("🔍 Trimmed description:", data.description?.trim());
-        //console.log("🔍 Checking data:", data);
-       // console.log("🔍 Checking content:", data.content);
-       // console.log("🔍 Trimmed content:", data.content?.trim());
-        
-        // const postContent = typeof data.content === "string" && data.content.trim() !== ""
-        //     ? data.content
-        //     : "설명이 없습니다.";
-        // const postContent = data.description && typeof data.description === "string"
-        // ? data.description.trim()
-        // : "설명이 없습니다.";
-        const postContent = typeof data.content === "string" && data.content.trim() !== ""
-        ? data.content
-        : data.description && typeof data.description === "string"
-            ? data.description.trim()
-            : "설명이 없습니다.";
-
-      //  console.log("✅ Final postContent:", postContent);
-    
-     //   console.log("✅ Assigned postContent (before):", postContent); // 👈 여기서 값 확인
-    
-        // 이미지 배열 매핑
-        const images = Array.isArray(data.Images)
-            ? data.Images.map((image) => ({
-                src: image.src,
-                fetchPriority: "auto",
-                productInfo: image.productInfo || "",
-                siteUrl: image.siteUrl || "",
-            }))
-            : [];
-
-        // 제품 정보 매핑
-        const products = Array.isArray(data.products)
-            ? data.products.map((product) => ({
-                postId: data.id, // 기존 postId 유지
-                productId: product.productId || shortId.generate(),
-                productName: product.productName || "알 수 없음",
-                category: product.category || "기타",
-                brand: product.brand || "브랜드 없음",
-                price: product.price ?? 0,
-                size: product.size || "사이즈 미정",
-                description: product.description || "설명 없음",
-                imageTag: product.imageTag || "",
-                siteUrl: product.siteUrl || "",
-            }))
-            : [];
-
-        // 제품 이미지 추가 (중복 방지)
-        products.forEach((product) => {
-            if (!images.some(img => img.src === product.imageTag)) {
-                images.push({
-                    src: product.imageTag,
-                    fetchPriority: "auto",
-                    productInfo: `${product.brand} - ${product.productName} / ${product.price}원 / ${product.size}`,
-                    siteUrl: product.siteUrl,
-                });
-            }
-        });
-
-        // 댓글 기본값 처리
-        const Comments = Array.isArray(data.comments)
-            ? data.comments.map((comment) => ({
-                id: shortId.generate(),
-                User: { id: shortId.generate(), nickname: comment.nickname || "댓글 작성자" },
-                content: comment.text || "내용 없음",
-            }))
-            : [];
-
-        // 최종적으로 반환할 게시물 객체
-        const newPost = {
-            id: postId,
-            User: user,
-            content: postContent,
-            Images: images,
-            Comments: Comments,
-            products: products,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        };
-
-        console.log(" Returning newPost:", newPost);
-        thunkAPI.dispatch(addPostToMe(newPost));
-    
-        return newPost;
+      if (!data || typeof data !== "object") {
+        throw new Error("Invalid data format: data must be an object.");
+      }
+  
+      const postId = data.id || shortId.generate();
+      const user = data.user ?? { id: shortId.generate(), nickname: "익명" };
+  
+      const postContent =
+        typeof data.content === "string" && data.content.trim() !== ""
+          ? data.content
+          : data.description?.trim() || "설명이 없습니다.";
+  
+      // ✨ 해시태그 추출
+      const hashtags = postContent.match(/#[^\s#]+/g)?.map((tag) => tag.replace('#', '')) || [];
+  
+      // ✨ 이미지 처리 + 상품 태깅 매핑
+      const images = Array.isArray(data.Images)
+        ? data.Images.map((image) => ({
+            src: image.src,
+            fetchPriority: "auto",
+            ProductInfo: image.ProductInfo || [], // 명세에 맞춰 수정
+          }))
+        : [];
+  
+      // ✨ 이미지별 태깅된 상품 매핑
+      const taggedProductsByImage = data.taggedProductsByImage ?? {};
+  
+      const Comments = Array.isArray(data.comments)
+        ? data.comments.map((comment) => ({
+            id: shortId.generate(),
+            User: {
+              id: shortId.generate(),
+              nickname: comment.nickname || "댓글 작성자",
+            },
+            content: comment.text || "내용 없음",
+          }))
+        : [];
+  
+      // ✅ 최종 게시글 객체 (서버에서 응답으로 줄 형식)
+      const newPost = {
+        id: postId,
+        User: user,
+        content: postContent,
+        Images: images,
+        Comments,
+        hashtags,
+        taggedProductsByImage,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+  
+      thunkAPI.dispatch(addPostToMe(newPost));
+      return newPost;
     } catch (error) {
-        console.error("❌ Error in addPost:", error.message);
-        return thunkAPI.rejectWithValue(error.message);
+      console.error("❌ Error in addPost:", error.message);
+      return thunkAPI.rejectWithValue(error.message);
     }
-});
-
+  });
+  
 
   export const addComment = createAsyncThunk('post/addComment', async (data, thunkAPI) => {
   try {
@@ -766,8 +708,7 @@ const postSlice = createSlice({
         }
       
         // singlePost에 저장
-        draft.singlePost = post;
-      
+        draft.singlePost = action.payload      
         // mainPosts에 이미 없으면 추가
         const already = draft.mainPosts.find((p) => String(p.id) === String(post.id));
         if (!already) {

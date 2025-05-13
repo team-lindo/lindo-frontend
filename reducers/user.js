@@ -262,6 +262,20 @@ export const fakeApi = {
           Followers: [],
         }
       },
+      4: {
+        data: {
+          id: 4,
+          nickname: "test1",
+          Posts: [{
+            id: 4,
+            content:  "test1의 게시물" ,
+            Images: [{ id: 1, src: "/images/test1.jpg" }],
+            thumbnail: "/images/test1.jpg",
+          }],
+          Followings: [],
+          Followers: [],
+        }
+      },
       5: await fakeApi.test1(),
     };
     return users[String(id)] || null;
@@ -770,4 +784,3 @@ const userSlice = createSlice({
 export const { setMe,setLogOutLoading,addPostToMe,removePostOfMe, setPosts  } = userSlice.actions;
 
 export default userSlice.reducer;
-
