@@ -105,17 +105,9 @@ export const getTaggedProductsByImage = (images) => {
 };
 
 export const fetchPostsByTaggedProduct = async (uid) => {
-  // uid가 태그된 게시글만 필터링
-  //	특정 상품이 태그된 게시글을 찾는 용도
-  const matchedPosts = dummyPosts.filter((post) =>
-    Object.values(post.taggedProductsByImage || {}).some((tagList) =>
-      tagList.some((tag) => tag.uid === uid)
-    )
-  );
-
-  return { data: matchedPosts }; // axios 기반이라면 response.data 형태로 흉내냄
+  const response = await axios.get(`/products/${uid}/posts`);
+  return response.data; // 실제 서버 응답
 };
-
 const images = [{ id: 1, src: "/images/test.jpg" }];
 
 
@@ -280,9 +272,6 @@ export const fakeApi = {
 
   signup: async () => ({ data: { id: 1, name: "New User" } }),
 
-  changeNickname: async (data) => ({
-    data: { nickname: data.nickname },
-  }),
   search: async ({ type, query }) => {
       const lowerQuery = query.toLowerCase();
   
@@ -375,123 +364,139 @@ export const logIn = createAsyncThunk('user/logIn', async (data, { rejectWithVal
 });
 
 
-export const logOut = createAsyncThunk('user/logOut', async (_, thunkAPI) => {
+export const logOut = createAsyncThunk(
+  "user/logOut",
+  async (_, { rejectWithValue }) => { 
+    try {
+      const response = await axiosInstance.post('/user/logout', {}, { withCredentials: true });
+      return response.data; // 👈 여기서 response.data가 { message: "Logged out successfully" } 형태여야 함
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "로그아웃 실패");
+    }
+  }
+);
+
+export const follow = createAsyncThunk('user/follow', async (data, { rejectWithValue }) => {
   try {
-    await fakeApi.logout();
-    return null;
+    const response = await axiosInstance.patch(`/user/${data}/follow`); // data === userId
+    return response.data; // ✅ 서버에서 UserDTO 객체 전체 반환해야 함
   } catch (error) {
-    return thunkAPI.rejectWithValue(error.message);
+    return rejectWithValue(error.response?.data || error.message);
   }
 });
 
-export const follow = createAsyncThunk('user/follow', async (userId, thunkAPI) => {
+export const unfollow = createAsyncThunk('user/unfollow', async (data, { rejectWithValue }) => {
   try {
-    const response = await fakeApi.follow(userId); // ✅ 전체 유저 정보 받음
-    return response.data; // ✅ UserId 말고 유저 객체 전체 반환
+    const response = await axiosInstance.delete(`/user/${data}/follow`);
+    return response.data; // ✅ { id: number } 형태로 반환
   } catch (error) {
-    return thunkAPI.rejectWithValue(error.message);
+    return rejectWithValue(error.response?.data || error.message);
   }
 });
 
-
-export const unfollow = createAsyncThunk('user/unfollow', async (userId, thunkAPI) => {
+export const signup = createAsyncThunk('user/signup', async (data, { rejectWithValue }) => {
   try {
-    await fakeApi.unfollow(userId);
-    return { UserId: userId };
+    const response = await axiosInstance.post('/user/signup', data); // ✅ 경로 수정
+    return response.data; // { id, nickname } 형태여야 함
   } catch (error) {
-    return thunkAPI.rejectWithValue(error.message);
+    return rejectWithValue(error.response?.data || error.message);
   }
 });
 
-export const signup = createAsyncThunk('user/signup', async (signUpData, thunkAPI) => {
-  try {
-    const response = await fakeApi.signup(signUpData);
-    return response.data;
-  } catch (error) {
-    return thunkAPI.rejectWithValue(error.message);
-  }
-});
-
-export const changeNickname = createAsyncThunk('user/changeNickname', async (data) => {
-  const response = await fakeApi.changeNickname(data);
-  return response.data;
-});
 
 //현재 로그인된 유저의 팔로잉 목록을 불러오는 함수
 export const loadFollowings = createAsyncThunk(
   'user/loadFollowings',
-  async (_, thunkAPI) => {
+  async ({ limit = 10, offset = 0 } = {}, { rejectWithValue }) => {
     try {
-      const me = await fakeApi.me();
-      return { Followings: me.data.Followings };
+      const response = await axiosInstance.get('/user/me/followings', {
+       // params: { limit, offset },
+      });
+      return response.data; // 응답이 FollowingDTO[] 형태라고 가정
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
+
 // 현재 로그인된 유저의 팔로워 목록을 불러오는 함수
 export const loadFollowers = createAsyncThunk(
   'user/loadFollowers',
-  async (_, thunkAPI) => {
+  async ({ limit = 20, offset = 0 } = {}, { rejectWithValue }) => {
     try {
-      const me = await fakeApi.me();
-      return { Followers: me.data.Followers };
+      const response = await axiosInstance.get('/user/followers', {
+        params: { limit, offset },
+      });
+      return response.data; // ✅ FollowerDTO[]
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
+//dispatch(loadFollowers({ limit: 10, offset: 0 }));
+
 // 현재 로그인한 사용자(me)의 정보를 가져옴
-export const loadMyInfo = createAsyncThunk(
-  'user/loadMyInfo',
-  async (_, thunkAPI) => {
-    try {
-      const me = await fakeApi.me();
-      return me.data;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
-    }
+export const loadMyInfo = createAsyncThunk('/user/loadMyInfo', async (_, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.get('/user/me'); // ✅ 명세대로 수정
+    return response.data; // ✅ UserDTO 형식
+  } catch (error) {
+    return rejectWithValue(error.response?.data || "유저 정보 가져오기 실패");
   }
-);
+});
+
 
 //특정 유저의 정보를 가져옴.data는 해당 유저의 userId.예: 프로필 페이지에 들어갈 때 GET /user/5 호출해서 해당 유저 정보 받아옴
-export const loadUser = createAsyncThunk(
-  'user/loadUser',
-  async (userId, thunkAPI) => {
-    try {
-      const user = await fakeApi.getUserById(userId);
-      if (!user) throw new Error('User not found');
-      return user.data;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
-    }
+// export const loadUser = createAsyncThunk(
+//   'user/loadUser',
+//   async (userId, thunkAPI) => {
+//     try {
+//       const user = await fakeApi.getUserById(userId);
+//       if (!user) throw new Error('User not found');
+//       return user.data;
+//     } catch (error) {
+//       return thunkAPI.rejectWithValue(error.message);
+//     }
+//   }
+// )
+// export const fetchUserProfile = createAsyncThunk(
+//   'user/fetchUserProfile',
+//   async (id, { rejectWithValue }) => {
+//     try {
+//       const response = await fakeApi.getUserById(id);
+//       if (!response || !response.data) throw new Error("User not found");
+//       return response.data;
+//     } catch (error) {
+//       console.error("프로필 불러오기 실패:", error.message);
+//       return rejectWithValue(error.message); // ✅ 이렇게 수정
+//     }
+//   }
+// );
+
+export const fetchUserProfile = createAsyncThunk('user/fetchUserProfile', async (id, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.get(`/user/profile/${id}`); 
+    console.log("프로필 응답:", response.data);
+    return response.data; // 여기에는 Posts, Followings, Followers 다 포함됨
+  } catch (error) {
+    console.error("프로필 불러오기 실패:", error.response?.data || error.message);
+    return rejectWithValue(error.response?.data || error.message);
   }
-)
-export const fetchUserProfile = createAsyncThunk(
-  'user/fetchUserProfile',
-  async (id, { rejectWithValue }) => {
+});
+
+export const getPosts = createAsyncThunk(
+  'user/getPosts',
+  async ({ page = 1, limit = 10 } = {}, { rejectWithValue }) => {
     try {
-      const response = await fakeApi.getUserById(id);
-      if (!response || !response.data) throw new Error("User not found");
-      return response.data;
+      const response = await axiosInstance.get('/posts', {
+      //  params: { page, limit },
+      });
+      return response.data; // MinimalPostDTO[]
     } catch (error) {
-      console.error("프로필 불러오기 실패:", error.message);
-      return rejectWithValue(error.message); // ✅ 이렇게 수정
+      return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
-
-// export const fetchUserProfile = createAsyncThunk('user/fetchUserProfile', async (id, { rejectWithValue }) => {
-//   try {
-//     const response = await axiosInstance.get(`/user/profile/${id}`); 
-//     console.log("프로필 응답:", response.data);
-//     return response.data; // 여기에는 Posts, Followings, Followers 다 포함됨
-//   } catch (error) {
-//     console.error("프로필 불러오기 실패:", error.response?.data || error.message);
-//     return rejectWithValue(error.response?.data || error.message);
-//   }
-// });
-
 const userSlice = createSlice({
   name: 'user',
   initialState,
@@ -629,22 +634,6 @@ const userSlice = createSlice({
         draft.signUpLoading = false;
         draft.signUpError = action.payload;
       })
-      .addCase(changeNickname.pending, (draft) => {
-        draft.changeNicknameLoading = true;
-        draft.changeNicknameError = null;
-        draft.changeNicknameDone = false;
-      })
-      .addCase(changeNickname.fulfilled, (draft, action) => {
-        if (draft.me && action.payload?.nickname) {
-          draft.me.nickname = action.payload.nickname;
-        }
-        draft.changeNicknameLoading = false;
-        draft.changeNicknameDone = true;
-      })
-      .addCase(changeNickname.rejected, (draft, action) => {
-        draft.changeNicknameLoading = false;
-        draft.changeNicknameError = action.payload;
-      })
       .addCase(likePost.pending, (draft, action) => {
         draft.likePostLoading = true;
         draft.likePostDone = false;
@@ -765,6 +754,20 @@ const userSlice = createSlice({
         console.error('팔로잉 목록  불러오기 실패:', action.payload);
         draft.me = null;
       })
+      .addCase(getPosts.pending, (draft) => {
+        draft.getPostsLoading = true;
+        draft.getPostsError = null;
+      })
+      .addCase(getPosts.fulfilled, (draft, action) => {
+        draft.getPostsLoading = false;
+        draft.posts = action.payload;
+      })
+      .addCase(getPosts.rejected, (draft, action) => {
+        draft.getPostsLoading = false;
+        draft.getPostsError = action.payload || '에러 발생';
+        console.error('posts를 가져오기 실패:', action.payload);
+      })
+      
   },
 });
 export const { setMe,setLogOutLoading,addPostToMe,removePostOfMe, setPosts  } = userSlice.actions;
