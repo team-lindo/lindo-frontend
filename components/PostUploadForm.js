@@ -6,7 +6,7 @@ import { addPost } from '../reducers/post';
 import { fetchUserProfile ,} from '../reducers/user'; 
 import { useRouter } from 'next/router';
 import { message } from 'antd';
-import { fetchProduct } from "../reducers/product";
+import {fetchClosetData } from "../reducers/product";
 
 
 const PostUploadForm = () => {
@@ -30,7 +30,7 @@ const user = useMemo(() => {
   const handleSubmit = async () => {
    // const taggedProducts = Object.values(taggedProductsByImage).flat();
     // 옷장 전체 펼치기
-const allClothes = Object.values(clothes).flat();
+  const allClothes = Object.values(clothes).flat();
 
 // 태그에 상품 정보 주입
 const taggedProducts = Object.values(taggedProductsByImage).flat().map((tag) => {
@@ -83,7 +83,7 @@ dispatch(clearUploadedImages());
 
         message.success('게시글이 업로드되었습니다!');
         console.log("me.Posts:", me?.Posts); // 게시글 객체 배열이 있는지
-console.log("user.Posts.length:", user?.Posts?.length); // 증가했는지
+        console.log("user.Posts.length:", user?.Posts?.length); // 증가했는지
 
         router.push('/mypage');
       } else {
@@ -99,10 +99,8 @@ console.log("user.Posts.length:", user?.Posts?.length); // 증가했는지
   //   dispatch(fetchProduct());
   // }, [dispatch]);
   useEffect(() => {
-    if (me?.id) {
-      dispatch(fetchProduct()); //  서버에서 나의 옷장 불러오기
-    }
-  }, [dispatch]);
+    if (me?.id) dispatch(fetchClosetData());
+  }, [me]);
   
   
   const handleSelect = (item) => {

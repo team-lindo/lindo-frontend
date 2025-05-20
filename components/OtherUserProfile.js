@@ -6,7 +6,6 @@ import Image from "next/image";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchUserProfile } from "../reducers/user";
 import AppLayout from "../components/AppLayout";
-import {fetchProduct} from "../reducers/product";
 
 
 const OtherUserProfile = () => {
@@ -19,7 +18,6 @@ const OtherUserProfile = () => {
   useEffect(() => {
     if (id) {
       dispatch(fetchUserProfile(id));
-      dispatch(fetchProduct());
     }
   }, [id, dispatch]);
 
@@ -39,13 +37,13 @@ const OtherUserProfile = () => {
             >
               게시물<br />{profileUser.postCount ?? 0}
             </div>,
-            <div key="closet">
-              <Link href={`/closet/${profileUser.id}`}>
-                <span style={{ cursor: "pointer", color: "blue" }}>
-                  옷장<br />보기
-                </span>
-              </Link>
-            </div>,
+            // <div key="closet">
+            //   <Link href={`/closet/${profileUser.id}`}>
+            //     <span style={{ cursor: "pointer", color: "blue" }}>
+            //       옷장<br />보기
+            //     </span>
+            //   </Link>
+            // </div>,
           ]}
         >
           <Card.Meta

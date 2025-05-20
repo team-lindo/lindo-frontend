@@ -106,31 +106,18 @@ const initialState = {
 };
 
 
-// // 제품 정보 가져오기 (비동기 API 요청 시뮬레이션)
+//	게시글 작성 시 태깅용 옷장 불러오기
 // export const fetchProduct = createAsyncThunk(
 //   'product/fetchProduct',
-//   async () => {
-//     return new Promise((resolve) => {
-//       setTimeout(() => {
-//         resolve(dummyProduct);
-//       }, 500); // 0.5초 후 데이터 반환 (API 호출 느낌)
-//     });
+//   async (_, thunkAPI) => {
+//     try {
+//       const response = await axiosInstance.get('/closet/me'); // ✅ 내 옷장 API
+//       return response.data; // [{ uid, name, price, url, ... }]
+//     } catch (error) {
+//       return thunkAPI.rejectWithValue(error.response?.data || error.message);
+//     }
 //   }
 // );
-
-//특정 유저의 옷장 보기 
-
-export const fetchProduct = createAsyncThunk(
-  'product/fetchProduct',
-  async (_, thunkAPI) => {
-    try {
-      const response = await axiosInstance.get('/closet/me'); // ✅ 내 옷장 API
-      return response.data; // [{ uid, name, price, url, ... }]
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
 
 
 /* addProduct 연동동
@@ -195,18 +182,29 @@ export const getProductById = createAsyncThunk(
 );
 
 //로그인한 유저의 옷장 아이템 리스트
-export const fetchMyCloset = createAsyncThunk(
-  'product/fetchMyCloset',
-  async (_, { rejectWithValue }) => {
+// export const fetchMyCloset = createAsyncThunk(
+//   'product/fetchMyCloset',
+//   async (_, { rejectWithValue }) => {
+//     try {
+//       const response = await axiosInstance.get('/closet/me'); // ✅ 내 옷장 API
+//       return response.data.closetItems; // ✅ [{ uid, name, price, ... }]
+//     } catch (error) {
+//       return rejectWithValue(error.response?.data || error.message);
+//     }
+//   }
+// );
+
+export const fetchClosetData = createAsyncThunk(
+  'product/fetchClosetData',
+  async (_, thunkAPI) => {
     try {
-      const response = await axiosInstance.get('/closet/me'); // ✅ 내 옷장 API
-      return response.data.closetItems; // ✅ [{ uid, name, price, ... }]
+      const response = await axiosInstance.get('/closet/me');
+      return response.data.closetItems; // 서버 응답
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
     }
   }
 );
-
 
 const productSlice = createSlice({
   name: 'product',
@@ -245,17 +243,28 @@ const productSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
-      .addCase(fetchProduct.pending, (draft) => {
-        draft.loading = true;
-      })
-      .addCase(fetchProduct.fulfilled, (draft, action) => {
-        draft.loading = false;
-        draft.product = action.payload;
-      })
-      .addCase(fetchProduct.rejected, (draft) => {
-        draft.loading = false;
-        draft.error = 'Failed to fetch product';
-      })
+      // .addCase(fetchProduct.pending, (draft) => {
+      //   draft.loading = true;
+      // })
+      // .addCase(fetchProduct.fulfilled, (draft, action) => {
+      //   draft.loading = false;
+      
+      //   const categorized = Object.fromEntries(
+      //     Object.keys(draft.initialClothes).map((key) => [key, []])
+      //   );
+      
+      //   action.payload.forEach((item) => {
+      //     if (categorized[item.category]) {
+      //       categorized[item.category].push(item);
+      //     }
+      //   });
+      
+      //   draft.initialClothes = categorized;
+      // })
+      // .addCase(fetchProduct.rejected, (draft) => {
+      //   draft.loading = false;
+      //   draft.error = 'Failed to fetch product';
+      // })
       .addCase(addProduct.fulfilled, (draft, action) => {
         const product = action.payload;
         const category = product.category;
@@ -273,10 +282,19 @@ const productSlice = createSlice({
       })
       .addCase(deleteProduct.fulfilled, (draft, action) => {
         const id = action.payload;
+      
         for (const category in draft.initialClothes) {
-          draft.initialClothes[category] = draft.initialClothes[category].filter(p => p.id !== id);
+          draft.initialClothes[category] = draft.initialClothes[category].filter(p => p.uid !== id);
         }
+      
+        for (const category in draft.closetItemsByCategory) {
+          draft.closetItemsByCategory[category] = draft.closetItemsByCategory[category].filter(p => p.uid !== id);
+        }
+      
+        draft.closetItems = draft.closetItems.filter(p => p.uid !== id);
+        draft.allClosetItems = draft.allClosetItems.filter(p => p.uid !== id);
       })
+      
       // .addCase(updateProduct.fulfilled, (draft, action) => {
       //   const updated = action.payload;
       //   const category = updated.category;
@@ -286,18 +304,48 @@ const productSlice = createSlice({
         .addCase(getProductById.fulfilled, (draft, action) => {
           draft.product = action.payload;
         })
-        .addCase(fetchMyCloset.pending, (state) => {
-          state.fetchClosetLoading = true;
-          state.fetchClosetError = null;
+        // .addCase(fetchMyCloset.pending, (draft) => {
+        //   draft.fetchClosetLoading = true;
+        //   draft.fetchClosetError = null;
+        // })
+        // .addCase(fetchMyCloset.fulfilled, (draft, action) => {
+        //   draft.fetchClosetLoading = false;
+        //   draft.closetItems = action.payload; // ✅ closetItems 저장
+        // })
+        // .addCase(fetchMyCloset.rejected, (draft, action) => {
+        //   draft.fetchClosetLoading = false;
+        //   draft.fetchClosetError = action.payload;
+        // })
+        .addCase(fetchClosetData.pending, (draft) => {
+          draft.fetchClosetLoading = true;
+          draft.fetchClosetError = null;
         })
-        .addCase(fetchMyCloset.fulfilled, (state, action) => {
-          state.fetchClosetLoading = false;
-          state.closetItems = action.payload; // ✅ closetItems 저장
+        .addCase(fetchClosetData.fulfilled, (draft, action) => {
+          draft.fetchClosetLoading = false;
+        
+          const items = action.payload;
+        
+          // ✅ 전체 아이템 저장 (옷장 페이지용)
+          draft.closetItems = items;
+        
+          // ✅ 카테고리별 분류 저장 (태깅용)
+          const categorized = Object.fromEntries(
+            Object.keys(draft.initialClothes).map((key) => [key, []])
+          );
+        
+          items.forEach((item) => {
+            if (categorized[item.category]) {
+              categorized[item.category].push(item);
+            }
+          });
+        
+          draft.initialClothes = categorized;
         })
-        .addCase(fetchMyCloset.rejected, (state, action) => {
-          state.fetchClosetLoading = false;
-          state.fetchClosetError = action.payload;
-        })
+        .addCase(fetchClosetData.rejected, (draft, action) => {
+          draft.fetchClosetLoading = false;
+          draft.fetchClosetError = action.payload;
+        });
+        
 
   },
   })

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Head from "next/head";
 import AppLayout from "../components/AppLayout";
 import ClosetForm from "../components/ClosetForm";
-import  { initialClothes,fetchMyCloset } from "../reducers/product";
+import  { initialClothes,fetchClosetData } from "../reducers/product";
 
 const Closet = () => {
   const { me } = useSelector((state) => state.user || {}); 
@@ -21,12 +21,10 @@ const Closet = () => {
   if (typeof window !== "undefined" && !me) {
   return null; // 클라이언트에서만 실행하도록 체크
 }
-  // 로그인된 유저일 때만 옷장 요청
-useEffect(() => {
-    if (me?.id) {
-      dispatch(fetchMyCloset());
-    }
-  }, [me, dispatch]);
+
+  useEffect(() => {
+    if (me?.id) dispatch(fetchClosetData());
+  }, [me]);
   
 return (
     <>

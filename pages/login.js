@@ -17,7 +17,7 @@ import Head from "next/head";
 
 import useInput from "../hooks/useInput";
 import { logIn } from "../reducers/user";
-import { fetchProduct } from "../reducers/product";
+import { fetchClosetData } from "../reducers/product";
 import Link from "next/link";
 
 const { Title, Text } = Typography;
@@ -38,7 +38,7 @@ function Login() {
   useEffect(() => {
     if (me) {
       message.success("로그인 성공!");
-      dispatch(fetchProduct());
+      dispatch(fetchClosetData());
       router.push("/");
     }
   }, [me, router, dispatch]);

@@ -50,14 +50,23 @@ const TaggableImageUploader = ({
     const currentImageId = images[selectedIndex].id;
   
     // ✅ 여기에 제대로 된 newTag를 생성!
+    // const newTag = {
+    //   uid: waitingTagItem.uid,
+    //   url: waitingTagItem.url,
+    //   name: waitingTagItem.name,
+    //   price: waitingTagItem.price,
+    //   x,
+    //   y,
+    // };
     const newTag = {
       uid: waitingTagItem.uid,
-      url: waitingTagItem.url,
-      name: waitingTagItem.name,
+      name: waitingTagItem.productName || waitingTagItem.name,  // 둘 중 하나 대응
+      url: waitingTagItem.thumbnail || waitingTagItem.url,       // 둘 중 하나 대응
       price: waitingTagItem.price,
       x,
       y,
     };
+    
   
     // ✅ 이 시점에서 정확하게 정보가 들어감!
     setTaggedProductsByImage((prev) => ({
@@ -175,6 +184,9 @@ const TaggableImageUploader = ({
                 }}
                 onClick={() => setSelectedIndex(idx)}
               />
+                 <div style={{ marginTop: 4, fontSize: 12 }}>
+                {tag.name} <br /> ₩{tag.price?.toLocaleString()}
+              </div>
               <button
                 onClick={() => removeImage(idx)}
                 style={{
