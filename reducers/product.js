@@ -147,7 +147,7 @@ export const deleteProduct = createAsyncThunk(
   async (productId, thunkAPI) => {
     try {
       await axiosInstance.delete(`/api/product/${productId}`);
-      return productId; // 삭제된 ID 반환
+      return response.data.deletedId; // ✅ deletedId만 반환
     } catch (error) {
       return thunkAPI.rejectWithValue(error.response?.data || error.message);
     }

@@ -31,8 +31,6 @@ const UploadForm = ({ me }) => {
       productName: values.productName,
       category: values.category,
       brand: values.brand,
-      price: values.price,
-      thumbnail: fileList.length > 0 ? fileList[0].url || fileList[0].response?.url : null,
     };
 
     const imagesWithTags = fileList.map((file) => ({
