@@ -38,7 +38,7 @@ function Login() {
   useEffect(() => {
     if (me) {
       message.success("로그인 성공!");
-      dispatch(fetchProduct(me.id));
+      dispatch(fetchProduct());
       router.push("/");
     }
   }, [me, router, dispatch]);

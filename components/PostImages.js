@@ -52,7 +52,6 @@ const PostImages = ({ images = [], taggedProductsByImage = {} }) => {
             <p style={{ margin: '4px 0' }}>
               ₩{tag.price?.toLocaleString()}
             </p>
-            <p style={{ margin: 0 }}>사이즈: {tag.size}</p>
           </div>
         }
         trigger="hover"

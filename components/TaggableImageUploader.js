@@ -55,7 +55,6 @@ const TaggableImageUploader = ({
       url: waitingTagItem.url,
       name: waitingTagItem.name,
       price: waitingTagItem.price,
-      size: waitingTagItem.size,
       x,
       y,
     };

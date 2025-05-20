@@ -9,7 +9,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { UploadOutlined } from "@ant-design/icons";
 import Router from "next/router";
-import { loadUserPosts } from "../reducers/post";
+//import { loadUserPosts } from "../reducers/post";
 
 const UserProfile = ({ userId: propUserId }) => {
   const dispatch = useDispatch();
@@ -18,7 +18,9 @@ const UserProfile = ({ userId: propUserId }) => {
   const [userId, setUserId] = useState(null);
   //const posts = useSelector((state) => state.post.posts);
   const user = me.id === userId ? me : profileUser;
-
+  const followingsList = useSelector((state) => state.user.followingsList);
+  const followersList = useSelector((state) => state.user.followersList);
+  
   const posts = user?.Posts || [];
   const [viewedUser, setViewedUser] = useState(null);
   const [postsVisible, setPostsVisible] = useState(true);
@@ -60,13 +62,16 @@ useEffect(() => {
 }, [userId]);
 
   
-  const handleTogglePosts = () => {
-    const toggled = !postsVisible;
-    setPostsVisible(toggled);
+  // const handleTogglePosts = () => {
+  //   const toggled = !postsVisible;
+  //   setPostsVisible(toggled);
   
-    if (toggled && posts.length === 0) {
-      dispatch(loadUserPosts({ id: user.id }));
-    }
+  //   if (toggled && posts.length === 0) {
+  //     dispatch(loadUserPosts({ id: user.id }));
+  //   }
+  // };
+  const handleTogglePosts = () => {
+    setPostsVisible((prev) => !prev);
   };
   
   const onLogOut = useCallback(async () => {
@@ -119,24 +124,25 @@ useEffect(() => {
               style={styles.clickableText}
               onClick={handleTogglePosts}
             >
-              게시물<br />{posts.length}
-                </div>,
-                <div
-                  key="follower"
-                  style={styles.clickableText}
-                  onClick={() => setFollowerModalVisible(true)}
-                >
-                  팔로워<br />
-                  {user?.Followers?.length || 0}
-                </div>,
-                <div
-                  key="following"
-                  style={styles.clickableText}
-                  onClick={() => setFollowingModalVisible(true)}
-                >
-                  팔로잉<br />
-                  {user?.Followings?.length || 0}
-                </div>,
+          게시물<br />{user?.postsCount ?? 0}
+          </div>,
+                          <div
+            key="follower"
+            style={styles.clickableText}
+            onClick={() => setFollowerModalVisible(true)}
+          >
+            팔로워<br />
+            {user?.followersCount ?? user?.Followers?.length ?? 0}
+          </div>,
+          <div
+            key="following"
+            style={styles.clickableText}
+            onClick={() => setFollowingModalVisible(true)}
+          >
+            팔로잉<br />
+            {user?.followingsCount ?? user?.Followings?.length ?? 0}
+          </div>
+
               ]
             : [
               <div
@@ -221,24 +227,24 @@ useEffect(() => {
     ))}
   </div>
 )}
+<Modal
+  title="팔로잉 목록"
+  open={followingModalVisible}
+  footer={null}
+  onCancel={() => setFollowingModalVisible(false)}
+>
+  <FollowList header="팔로잉" data={followingsList} />
+</Modal>
 
-    <Modal
-      title="팔로워 목록"
-      open={followerModalVisible}
-      footer={null}
-      onCancel={() => setFollowerModalVisible(false)}
-    >
-      <FollowList header="팔로워" data={me?.Followers ?? []} />
-    </Modal>
+<Modal
+  title="팔로워 목록"
+  open={followerModalVisible}
+  footer={null}
+  onCancel={() => setFollowerModalVisible(false)}
+>
+  <FollowList header="팔로워" data={followersList} />
+</Modal>
 
-      <Modal
-        title="팔로잉 목록"
-        open={followingModalVisible}
-        footer={null}
-        onCancel={() => setFollowingModalVisible(false)}
-      >
-        <FollowList header="팔로잉" data={me?.Followings ?? []} />
-      </Modal>
     </>
   );
 };

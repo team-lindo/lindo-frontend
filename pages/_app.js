@@ -27,7 +27,7 @@ function AppInitializer() {
       dispatch(loadMyInfo()); // 저장된 게 없을 경우 바로 요청
     }
   }, []);
-  
+  return null;
 }
 
 function NodeBird({ Component, ...rest }) {

@@ -2,8 +2,8 @@ import { useState,useMemo, useEffect   } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Image from 'next/image';
 import TaggableImageUploader from './TaggableImageUploader';
-import { addPost,uploadImage } from '../reducers/post'; 
-import { addPostToMe,fetchUserProfile ,} from '../reducers/user'; 
+import { addPost } from '../reducers/post'; 
+import { fetchUserProfile ,} from '../reducers/user'; 
 import { useRouter } from 'next/router';
 import { message } from 'antd';
 import { fetchProduct } from "../reducers/product";
@@ -14,19 +14,18 @@ const PostUploadForm = () => {
   const dispatch = useDispatch();
   const clothes = useSelector((state) => state.product.initialClothes);
   const [selected, setSelected] = useState([]);
-  const [imageList, setImageList] = useState([]);
   const [hashtags, setHashtags] = useState([]); 
   const [taggedProductsByImage, setTaggedProductsByImage] = useState({}); // 기존 tagsByImage  
   const [content, setContent] = useState('');
   const [waitingTagItem, setWaitingTagItem] = useState(null);
   const { me , profileUser} = useSelector((state) => state.user);
-  
+  const uploadImage = useSelector((state) => state.post.uploadedImages);
   const [imageFiles, setImageFiles] = useState([]);
-const [userId, setUserId] = useState(me?.id ?? null); // ✅ me가 있으면 바로 userId 세팅
 const user = useMemo(() => {
-  if (!me || !userId) return null;
-  return me.id === userId ? me : profileUser;
-}, [me, profileUser, userId]);
+  if (!me) return null;
+  return me.id === profileUser?.id ? me : profileUser;
+}, [me, profileUser]);
+
   // ✅ 게시 시 호출되는 함수 내부에 dispatch 코드 포함
   const handleSubmit = async () => {
    // const taggedProducts = Object.values(taggedProductsByImage).flat();
@@ -40,34 +39,44 @@ const taggedProducts = Object.values(taggedProductsByImage).flat().map((tag) => 
     ...tag,
     name: product?.name || '이름 없음',
     price: product?.price || 0,
-    size: product?.size || 'N/A',
     url: product?.url || '',
   };
 });
 
-   
+   // 필요 시 초기화
+dispatch(clearUploadedImages());
    const extractedTags = content.match(/#[^\s#]+/g)?.map(tag => tag.slice(1)) || [];
   
     // ✅ 최종적으로 Redux에 넣을 게시글 객체
-    const newPost = {
-  
-      user: me, 
-      id: Date.now(), // 고유 ID
-      content,
-      images: imageList,
+    // const newPost = {
+    //   user: me, 
+    //   id: Date.now(), // 고유 ID
+    //   content,
+    //   imageUrls: uploadedImages.map((img) => img.src),
+    //   hashtags: extractedTags,
+    //   taggedProducts,
+    //   User: { id: me?.id ?? 1, nickname: me?.nickname ?? '익명' },
+    //   Comments: [],
+    //   createdAt: new Date().toISOString(),
+    // };
+    const imageUrls = uploadImage.map((img) => img.src); // ✅ uploadedImages → imageUrls 변환
+
+    const postData = {
+      content: content.trim() || '설명이 없습니다.',
+      imageUrls,
       hashtags: extractedTags,
       taggedProducts,
-      User: { id: me?.id ?? 1, nickname: me?.nickname ?? '익명' },
-      Comments: [],
-      createdAt: new Date().toISOString(),
     };
-  
+    
     try {
-      // ✅ Redux에 직접 저장
-      const result = await dispatch(addPost(newPost));
-  
+      const result = await dispatch(addPost(postData));
+      const newPost = {
+        ...result.payload, // 서버 응답 (id, content, imageUrls, createdAt 등)
+        User: { id: me.id, nickname: me.nickname },
+        Comments: [],
+      };
       if (result.meta.requestStatus === 'fulfilled') {
-        // dispatch(addPostToMe(newPost));
+         dispatch(addPostToMe(newPost));
         // console.log("🧪 addPostToMe 직후 me.Posts:", [...(me?.Posts ?? [])]); // 🔍 상태 확인
         dispatch(fetchUserProfile(me.id));
         
@@ -86,9 +95,15 @@ console.log("user.Posts.length:", user?.Posts?.length); // 증가했는지
     }
   };
   
+  // useEffect(() => {
+  //   dispatch(fetchProduct());
+  // }, [dispatch]);
   useEffect(() => {
-    dispatch(fetchProduct());
+    if (me?.id) {
+      dispatch(fetchProduct()); //  서버에서 나의 옷장 불러오기
+    }
   }, [dispatch]);
+  
   
   const handleSelect = (item) => {
     setSelected(prev =>
@@ -109,7 +124,6 @@ console.log("user.Posts.length:", user?.Posts?.length); // 증가했는지
   
       if (resultAction.type === uploadImage.fulfilled.type) {
         const uploadedImages = resultAction.payload;
-        setImageList((prev) => [...prev, ...uploadedImages]);
       } else {
         message.error('이미지 업로드에 실패했습니다.');
       }
@@ -125,7 +139,7 @@ console.log("user.Posts.length:", user?.Posts?.length); // 증가했는지
         {/* 이미지 업로드 + 태깅 */}
         <TaggableImageUploader
           clothes={clothes}
-          images={imageList}
+          images={uploadedImages}
           setImages={setImageList}
           taggedProductsByImage={taggedProductsByImage}     // ✅
           setTaggedProductsByImage={setTaggedProductsByImage}

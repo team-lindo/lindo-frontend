@@ -23,7 +23,7 @@ const PostCardContent = ({
       console.error("postId가 없습니다.");
       return;
     }
-    dispatch(updatePost({ PostId: postId, content: editText })); // createAsyncThunk 사용
+    dispatch(updatePost({ postId: postId, content: editText })); // createAsyncThunk 사용
     onChangePost(editText);
   }, [dispatch, editText, postId, onChangePost]);
   

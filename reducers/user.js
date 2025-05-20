@@ -103,11 +103,18 @@ export const getTaggedProductsByImage = (images) => {
   }
   return result;
 };
+export const fetchPostsByTaggedProduct = createAsyncThunk(
+  'post/fetchPostsByTaggedProduct',
+  async (uid, thunkAPI) => {
+    try {
+      const response = await axiosInstance.get(`/api/products/${uid}/posts`);
+      return response.data; // 게시글 배열
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
 
-export const fetchPostsByTaggedProduct = async (uid) => {
-  const response = await axios.get(`/products/${uid}/posts`);
-  return response.data; // 실제 서버 응답
-};
 const images = [{ id: 1, src: "/images/test.jpg" }];
 
 
@@ -117,52 +124,13 @@ export const fakeApi = {
       id: 1,
       nickname: "test",
       email: "test@example.com",
-      Posts: [
-        {
-          id: 1,
-          content:  "test의 게시물 #여름 #반팔" ,
-        //  Images: [{ id: 1, src: "/images/test.jpg"  }],
-        //  thumbnail: "/images/test.jpg",
-        Images: images,
-        thumbnail: images[0].src,
-
-        hashtags: ["여름", "반팔"],
-          taggedProductsByImage: getTaggedProductsByImage(images),        },
-      ],
+      profileImageUrl: "/images/profile.jpg",
+  
+      // 내 팔로잉/팔로워
       Followings: [
-        {
-          id: 2,
-          nickname: "test2",
-          Posts: [{
-            id: 2,
-            content: "test2의 게시물" ,
-            Images: [{ id: 2, src: "/images/test2.jpg" }],
-            thumbnail: "/images/test2.jpg",
-          },],
-        },
-        {
-          id: 3,
-          nickname: "test3",
-          Posts: [ {
-            id: 3,
-            content: "test3의 게시물" ,
-            Images: [{ id: 3, src: "/images/test3.jpg" }],
-            thumbnail: "/images/test3.jpg",
-          },],
-        },
-
-        {
-          id: 5,
-          nickname: "test1",
-          Posts: [
-            {
-              id: 5,
-              content: "test1의 게시물 #봄 #가을" ,
-              Images: [{ id: 5, src: "/images/test1.jpg" }],
-              thumbnail: "/images/test1.jpg",
-            },
-          ],
-        },
+        { id: 2, nickname: "test2" },
+        { id: 3, nickname: "test3" },
+        { id: 5, nickname: "test1" },
       ],
       Followers: [
         { id: 2, nickname: "test2" },
@@ -170,6 +138,19 @@ export const fakeApi = {
         { id: 4, nickname: "test4" },
         { id: 5, nickname: "test1" },
       ],
+  
+      // 내 게시글
+      Posts: [
+        {
+          id: 1,
+          content: "test의 게시물 #여름 #반팔",
+          Images: images,
+          thumbnail: images[0].src,
+          hashtags: ["여름", "반팔"],
+          taggedProductsByImage: getTaggedProductsByImage(images),
+        },
+      ],
+  
       savedItems: [
         { id: 1, name: '청바지', imageUrl: '/images/jeans1.jpg' },
         { id: 2, name: '셔츠', imageUrl: '/images/knit1.jpg' },
@@ -225,50 +206,78 @@ export const fakeApi = {
 
   getUserById: async (id) => {
     const users = {
-      1: await fakeApi.me(),
+      1: await fakeApi.me(), // 로그인 유저
       2: {
         data: {
           id: 2,
           nickname: "test2",
-          Posts: [{
-            id: 2,
-            content: "test2의 게시물" ,
-            Images: [{ id: 2, src: "/images/test2.jpg" }],
-            thumbnail: "/images/test2.jpg",
-          }],
-          Followings: [],
-          Followers: [],
-        }
+          profileImageUrl: "/images/user2.jpg",
+          Posts: [
+            {
+              id: 2,
+              content: "test2의 게시물",
+              Images: [{ id: 2, src: "/images/test2.jpg" }],
+              thumbnail: "/images/test2.jpg",
+            },
+          ],
+          closetItems: [
+            { id: 1, name: "아우터", imageUrl: "/images/coat1.jpg" },
+          ],
+        },
       },
       3: {
         data: {
           id: 3,
           nickname: "test3",
-          Posts: [{
-            id: 3,
-            content:  "test3의 게시물" ,
-            Images: [{ id: 3, src: "/images/test3.jpg" }],
-            thumbnail: "/images/test3.jpg",
-          }],
-          Followings: [],
-          Followers: [],
-        }
+          profileImageUrl: "/images/user3.jpg",
+          Posts: [
+            {
+              id: 3,
+              content: "test3의 게시물",
+              Images: [{ id: 3, src: "/images/test3.jpg" }],
+              thumbnail: "/images/test3.jpg",
+            },
+          ],
+          closetItems: [],
+        },
       },
       5: await fakeApi.test1(),
     };
+  
     return users[String(id)] || null;
   },
+  
 
   login: async () => await fakeApi.me(),
 
   logout: async () => null,
 
   follow: async (id) => {
-    const res = await fakeApi.getUserById(id);
-    return { data: res.data };
+    const target = await fakeApi.getUserById(id);
+    return {
+      data: {
+        id: 1, // 내 ID
+        followedUser: {
+          id: target.data.id,
+          nickname: target.data.nickname,
+        },
+        followingsCount: 4, // ex. 현재 followings 수
+        followersCount: 5,  // ex. 현재 followers 수
+      },
+    };
   },
-
-  unfollow: async () => null,
+  
+  unfollow: async (id) => {
+    return {
+      data: {
+        id: 1,
+        unfollowedUserId: id,
+        followingsCount: 2,
+        followersCount: 4,
+      },
+    };
+  },
+  
 
   signup: async () => ({ data: { id: 1, name: "New User" } }),
 
@@ -312,16 +321,19 @@ export const initialUserProfile = {
     id: null,
     nickname: null,
     email: null,
-    profileImageUrl: null,
-    Posts: [],       
-    Followings: [], 
-    Followers: [],    
+    profileImageUrl: null, 
+postsCount: 0,
+closetItems: [],     // 해당 유저의 옷장 아이템들
   };
 
 const initialState = {
   isLoggedIn: false,
   me: null,
   accessToken: null,
+  followingsCount: 0,
+  followersCount: 0,
+  followingsList: [],
+  followersList: [],
   //userProfile: initialUserProfile,
   profileUser: initialUserProfile,
   posts: [],
@@ -351,10 +363,10 @@ const initialState = {
   changeNicknameError: null,
 
 };
-
+// http://api.lindohub.com/api/v1/app/users/login
 export const logIn = createAsyncThunk('user/logIn', async (data, { rejectWithValue }) => {
   try {
-    const response = await axiosInstance.post('/user/login', data); 
+    const response = await axiosInstance.post('/users/login', data); 
     console.log("로그인 API 응답:", response.data);
     return response.data;
   } catch (error) {
@@ -368,7 +380,7 @@ export const logOut = createAsyncThunk(
   "user/logOut",
   async (_, { rejectWithValue }) => { 
     try {
-      const response = await axiosInstance.post('/user/logout', {}, { withCredentials: true });
+      const response = await axiosInstance.post('/users/logout', {}, { withCredentials: true });
       return response.data; // 👈 여기서 response.data가 { message: "Logged out successfully" } 형태여야 함
     } catch (error) {
       return rejectWithValue(error.response?.data || "로그아웃 실패");
@@ -376,18 +388,22 @@ export const logOut = createAsyncThunk(
   }
 );
 
-export const follow = createAsyncThunk('user/follow', async (data, { rejectWithValue }) => {
-  try {
-    const response = await axiosInstance.patch(`/user/${data}/follow`); // data === userId
-    return response.data; // ✅ 서버에서 UserDTO 객체 전체 반환해야 함
-  } catch (error) {
-    return rejectWithValue(error.response?.data || error.message);
+export const follow = createAsyncThunk(
+  'user/follow',
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.patch(`/follow/${data}`); // ✅ 수정된 경로
+      return response.data; // 서버에서 UserDTO 전체 반환
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
-});
+);
+
 
 export const unfollow = createAsyncThunk('user/unfollow', async (data, { rejectWithValue }) => {
   try {
-    const response = await axiosInstance.delete(`/user/${data}/follow`);
+    const response = await axiosInstance.delete(`/follow/${data}`);
     return response.data; // ✅ { id: number } 형태로 반환
   } catch (error) {
     return rejectWithValue(error.response?.data || error.message);
@@ -396,7 +412,7 @@ export const unfollow = createAsyncThunk('user/unfollow', async (data, { rejectW
 
 export const signup = createAsyncThunk('user/signup', async (data, { rejectWithValue }) => {
   try {
-    const response = await axiosInstance.post('/user/signup', data); // ✅ 경로 수정
+    const response = await axiosInstance.post('/users/signup', data); // ✅ 경로 수정
     return response.data; // { id, nickname } 형태여야 함
   } catch (error) {
     return rejectWithValue(error.response?.data || error.message);
@@ -410,7 +426,7 @@ export const loadFollowings = createAsyncThunk(
   async ({ limit = 10, offset = 0 } = {}, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.get('/user/me/followings', {
-       // params: { limit, offset },
+       params: { limit, offset },
       });
       return response.data; // 응답이 FollowingDTO[] 형태라고 가정
     } catch (error) {
@@ -427,7 +443,7 @@ export const loadFollowers = createAsyncThunk(
       const response = await axiosInstance.get('/user/followers', {
         params: { limit, offset },
       });
-      return response.data; // ✅ FollowerDTO[]
+      return response.data; // ✅ FollowerDTO[]  // 응답 구조: { users: [...], totalCount: 53 }
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
     }
@@ -489,7 +505,7 @@ export const getPosts = createAsyncThunk(
   async ({ page = 1, limit = 10 } = {}, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.get('/posts', {
-      //  params: { page, limit },
+        params: { page, limit },
       });
       return response.data; // MinimalPostDTO[]
     } catch (error) {
@@ -497,6 +513,8 @@ export const getPosts = createAsyncThunk(
     }
   }
 );
+
+
 const userSlice = createSlice({
   name: 'user',
   initialState,
@@ -555,7 +573,7 @@ const userSlice = createSlice({
       .addCase(logIn.fulfilled, (draft, action) => {
        // console.log("Payload from API:", action.payload); 
         draft.logInLoading = false;
-        draft.me = action.payload;
+        draft.me = action.payload.user;             // ✅ 유저 정보만 저장
         draft.isLoggedIn = true;
         draft.logInDone = true;
         draft.accessToken = action.payload.accessToken;
@@ -589,16 +607,26 @@ const userSlice = createSlice({
       .addCase(follow.fulfilled, (draft, action) => {
         console.log("💬 FOLLOW 응답 유저 데이터:", action.payload);
       
+        const data = action.payload; // ✅ 먼저 선언
+      
         draft.followLoading = false;
+      
         if (draft.me) {
-          const alreadyFollowing = draft.me.Followings.find((u) => u.id === action.payload.id);
+          const alreadyFollowing = draft.me.Followings.find(
+            (u) => u.id === data.followedUser.id
+          );
+      
           if (!alreadyFollowing) {
-            // 🔥 Posts가 빠졌다면, 여기서 보완해야 함!
-            draft.me.Followings.push(action.payload);
+            draft.me.Followings.push(data.followedUser); // ✅ followedUser만 추가
           }
+      
+          draft.me.followingsCount = data.followingsCount;
+          draft.me.followersCount = data.followersCount;
         }
+      
         draft.followDone = true;
       })
+      
       
       
       .addCase(follow.rejected, (draft, action) => {
@@ -611,12 +639,24 @@ const userSlice = createSlice({
         draft.unfollowDone = false;
       })
       .addCase(unfollow.fulfilled, (draft, action) => {
+        const data = action.payload;
+      
         draft.unfollowLoading = false;
+      
         if (draft.me) {
-          draft.me.Followings = draft.me.Followings.filter((v) => v.id !== action.payload.UserId);
+          // 1. Followings 배열에서 해당 유저 제거
+          draft.me.Followings = draft.me.Followings.filter(
+            (v) => v.id !== data.unfollowedUserId
+          );
+      
+          // 2. 최신 카운트 값 반영
+          draft.me.followingsCount = data.followingsCount;
+          draft.me.followersCount = data.followersCount;
         }
+      
         draft.unfollowDone = true;
       })
+      
       .addCase(unfollow.rejected, (draft, action) => {
         draft.unfollowLoading = false;
         draft.unfollowError = action.payload;
@@ -662,10 +702,11 @@ const userSlice = createSlice({
         draft.unlikePostError = null;
       })
       .addCase(unlikePost.fulfilled, (draft, action) => {
+        const { postId } = action.payload;
         if (!draft.me?.likedPosts) return;
-        draft.me.likedPosts = draft.me.likedPosts.filter((p) => p.id !== action.payload);
+        draft.me.likedPosts = draft.me.likedPosts.filter((p) => String(p.id) !== String(postId));
       })
-
+      
       .addCase(unlikePost.rejected, (draft, action) => {
         draft.unlikePostLoading = false;
         draft.unlikePostError = action.error;
@@ -685,10 +726,13 @@ const userSlice = createSlice({
         }
       })
       .addCase(unbookmark.fulfilled, (draft, action) => {
+        const { postId } = action.payload;
+      
         draft.me.bookmarkedPosts = draft.me.bookmarkedPosts.filter(
-          (p) => p.id !== action.payload
+          (p) => String(p.id) !== String(postId)
         )
       })
+      
       .addCase(loadPost.fulfilled, (draft, action) => {
         const post = action.payload;
     
@@ -715,40 +759,51 @@ const userSlice = createSlice({
         draft.profileUser = {
           id: action.payload.id,
           nickname: action.payload.nickname,
-          email: action.payload.email,
           profileImageUrl: action.payload.profileImageUrl,
-          Posts: action.payload.Posts || [],
-          Followings: action.payload.Followings || [],
-          Followers: action.payload.Followers || [],
+          postCount: action.payload.postCount,
         };
-      })
+        })
+      
       .addCase(fetchUserProfile.rejected, (draft, action) => {
         console.error('userProfile 로드 실패', action.payload);
       })
       .addCase(loadMyInfo.fulfilled, (draft, action) => {
+        
         draft.me = {
           id: action.payload.id,
           nickname: action.payload.nickname,
           email: action.payload.email,
           profileImageUrl: action.payload.profileImageUrl,
-          Posts: action.payload.Posts || [],
-          Followings: action.payload.Followings || [],
-          Followers: action.payload.Followers || [],
-        }
+          postsCount: action.payload.postsCount ?? 0,
+          followingsCount: action.payload.followingsCount ?? 0,
+          followersCount: action.payload.followersCount ?? 0,
+          Posts: action.payload.Posts ?? [],
+        };
+        draft.isLoggedIn = true;
       })
+      
       .addCase(loadMyInfo.rejected, (draft, action) => {
         console.error('로그인 사용자 정보 불러오기 실패:', action.payload);
         draft.me = null;
       })
       .addCase(loadFollowers.fulfilled, (draft, action) => {
-        draft.me.Followers = action.payload.Followers;
+        //draft.Followers = action.payload;
+        const { users, totalCount } = action.payload;
+
+  draft.followersList.push(...users);
+  draft.followersCount = totalCount; // ✅ totalCount 저장
       })
       .addCase(loadFollowers.rejected, (draft, action) => {
         console.error('팔로워 목록  불러오기 실패:', action.payload);
         draft.me = null;
       })
       .addCase(loadFollowings.fulfilled, (draft, action) => {
-        draft.me.Followings = action.payload.Followings ;
+      //  draft.Followings = action.payload ;
+      const { users, totalCount } = action.payload;
+
+      draft.followingsList.push(...users);
+      draft.followingsCount = totalCount; // ✅ totalCount 저장
+
       })
       .addCase(loadFollowings.rejected, (draft, action) => {
         console.error('팔로잉 목록  불러오기 실패:', action.payload);

@@ -3,35 +3,58 @@ import PropTypes from "prop-types";
 import { useMemo, useState, useEffect } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import Link from "next/link";
+import { useDispatch } from 'react-redux';
+import { loadFollowers, follow, unfollow } from '../reducers/user'
 
 const FollowList = ({ header, data = [] }) => {
+  <FollowList header="팔로워" data={followersList} totalCount={followersCount} />
+
   const [followStatus, setFollowStatus] = useState(
     data.reduce((acc, user) => {
       acc[user.id] = true;
       return acc;
     }, {})
   );
+  const dispatch = useDispatch();
 
   const [loading, setLoading] = useState(false);
   const [loadedData, setLoadedData] = useState(data);
 
   useEffect(() => {
-    setLoadedData(data);
+    setFollowStatus(
+      data.reduce((acc, user) => {
+        acc[user.id] = true;
+        return acc;
+      }, {})
+    );
   }, [data]);
+  
 
   const [page, setPage] = useState(1);
+  
   const loadMoreData = () => {
     if (loading) return;
     setLoading(true);
-    setTimeout(() => {
-      const nextData = data.slice(page * 10, (page + 1) * 10);
-      setLoadedData((prev) => [...prev, ...nextData]);
-      setPage((prev) => prev + 1);
+    dispatch( loadFollowers({ offset: loadedData.length }))     
+.then((res) => {
+      if (res.payload) {
+        setLoadedData((prev) => [...prev, ...res.payload]);
+        setPage((prev) => prev + 1);
+      }
       setLoading(false);
-    }, 1000);
+    });
   };
+  
 
-  const onFollowToggle = (id) => {
+  const onFollowToggle = async (id) => {
+    const isCurrentlyFollowing = followStatus[id];
+  
+    if (isCurrentlyFollowing) {
+      await dispatch(unfollow(id)).unwrap();
+    } else {
+      await dispatch(follow(id)).unwrap();
+    }
+  
     setFollowStatus((prev) => ({
       ...prev,
       [id]: !prev[id],
@@ -59,7 +82,7 @@ const FollowList = ({ header, data = [] }) => {
       <InfiniteScroll
         dataLength={loadedData.length}
         next={loadMoreData}
-        hasMore={loadedData.length < data.length}
+        hasMore={loadedData.length <  totalCount}
         loader={<Skeleton avatar paragraph={{ rows: 1 }} active />}
         endMessage={<Divider plain>더 이상 데이터가 없습니다.</Divider>}
         scrollableTarget="scrollableDiv"
@@ -109,6 +132,7 @@ const FollowList = ({ header, data = [] }) => {
 FollowList.propTypes = {
   header: PropTypes.string.isRequired,
   data: PropTypes.array.isRequired,
+  totalCount: PropTypes.number.isRequired,
 };
 
 export default FollowList;

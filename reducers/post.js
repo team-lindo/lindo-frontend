@@ -74,6 +74,7 @@ export const initialState = {
   //mainPosts: generateDummyPost(10),  
   posts: [],
   taggedPosts: [],
+  uploadedImages: [],   // ✅ 이미지 파일 저장
   imagePaths: [],
   hasMorePosts: true,
   likePostLoading: false,
@@ -165,17 +166,35 @@ export const loadPosts = createAsyncThunk(
     }
   }
 );
+export const loadPost = createAsyncThunk(
+  'post/loadPost',
+  async ({ id }, thunkAPI) => {
+    try {
+      const response = await axiosInstance.get(`/api/post/${id}`);
+      return response.data; // 서버에서 PostDTO 하나 반환
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data || '해당 게시글을 찾을 수 없습니다.');
+    }
+  }
+);
 
 export const addPost = createAsyncThunk(
   'post/addPost',
   async (data, thunkAPI) => {
+   
     try {
+      const thumbnail = 0;
+      const taggedProducts = data.taggedProductsByImage?.[thumbnail] || [];
       // ✅ content와 Images만 서버에 전송 (DTO에 맞게)
       const postData = {
         content: data.content?.trim() || '설명이 없습니다.',
-        Images: Array.isArray(data.Images) ? data.Images : [],
+        imageUrls: uploadedImages.map((img) => img.src),
+        // Images: Array.isArray(data.Images) ? data.Images : [],
+        hashtags: extractedTags,  
+       // taggedProductsByImage: data.taggedProductsByImage || {}, // ✅ 추가됨
+       taggedProducts
       };
-
+      console.log('✅ 태그된 상품 목록:', taggedProducts);
       const response = await axiosInstance.post('/api/post', postData);
 
       const newPost = response.data; // 서버 응답 구조에 맞음
@@ -207,33 +226,17 @@ export const addComment = createAsyncThunk(
   }
 );
 //dispatch(addComment({ postId: 123, content: '멋진 코디네요!' }));
-
-export const removePost = createAsyncThunk('post/removePost', async (postId, thunkAPI) => {
-  try {
-   // console.log('Attempting to remove post with ID:', postId);
-
-    const dummyResponse = {
-      message: 'Post removed successfully',
-      removedPostId: postId,
-    };
-
-    // 실제 삭제가 가능한 ID인지 검증
-    const draft = thunkAPI.getState();
-    const postExists = draft.post.mainPosts.some((v) => String(v.id) === String(postId));
-
-    if (!postExists) {
-      throw new Error(`Post with ID ${postId} does not exist.`);
+export const removePost = createAsyncThunk(
+  'post/removePost',
+  async (postId, { rejectWithValue }) => {
+    try {
+      await axiosInstance.delete(`/api/posts/${postId}`);
+      return { postId }; // ✅ 직접 반환
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
     }
-    return {
-      postId: dummyResponse.removedPostId,
-      message: dummyResponse.message,
-    };
-    
-  } catch (error) {
-    console.error('Failed to remove post:', error.message);
-    return thunkAPI.rejectWithValue(error.message);
   }
-});
+);
 
 
 export const updatePost = createAsyncThunk(
@@ -336,10 +339,10 @@ export const fetchPostsByTaggedProductThunk = createAsyncThunk(
   'post/fetchPostsByTaggedProduct',
   async (uid, { rejectWithValue }) => {
     try {
-      const response = await fakeApi.fetchPostsByTaggedProduct(uid);
-      return response.data; // Array of posts
-    } catch (err) {
-      return rejectWithValue(err.message);
+      const response = await axiosInstance.get(`/api/products/${uid}/posts`);
+      return response.data; // [{ id, thumbnail }, ...]
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
@@ -358,7 +361,11 @@ const postSlice = createSlice({
       const exists = draft.mainPosts.find((v) => String(v.id) === String(action.payload.id));
       if (!exists) {
         draft.mainPosts.push(action.payload);
-      }}
+      }},
+      clearUploadedImages(draft) {
+        draft.uploadedImages = [];
+    //  state.imageFiles = [];
+      },
   },
   extraReducers: (builder) => {
     builder
@@ -442,11 +449,12 @@ const postSlice = createSlice({
       .addCase(loadUserPosts.fulfilled, (draft, action) => {
         draft.loadPostsLoading = false;
         draft.loadPostsDone = true;
-        draft.mainPosts = draft.mainPosts.concat(action.payload);
+      
+        draft.mainPosts = draft.mainPosts.concat(action.payload.posts); // ✅ 배열 concat
         draft.posts = action.payload.posts;
+      
+        draft.hasMorePosts = action.payload.hasMorePosts; // ✅ 명세와 일치
         console.log('✅ 게시글 응답:', action.payload);
-
-        draft.hasMorePosts = action.payload.length === 10;
       })
       .addCase(loadUserPosts.rejected, (draft, action) => {
         draft.loadPostsLoading = false;
@@ -460,8 +468,9 @@ const postSlice = createSlice({
       .addCase(loadHashtagPosts.fulfilled, (draft, action) => {
         draft.loadPostsLoading = false;
         draft.loadPostsDone = true;
-        draft.mainPosts = draft.mainPosts.concat(action.payload);
-        draft.hasMorePosts = action.payload.length === 10;
+        draft.mainPosts = draft.mainPosts.concat(action.payload.posts);
+        draft.hasMorePosts = action.payload.hasMorePosts;
+        
       })
       .addCase(loadHashtagPosts.rejected, (draft, action) => {
         draft.loadPostsLoading = false;
@@ -525,7 +534,7 @@ const postSlice = createSlice({
         //console.log('Action Payload:', action.payload);
         //console.log('Main Posts:', draft.mainPosts);
         if (!post) {
-          console.error('Post not found:', action.payload.PostId);
+          console.error('Post not found:', action.payload.postId);
         } else {
           //console.log('Found Post:', post);
         }
@@ -542,22 +551,21 @@ const postSlice = createSlice({
       })
       .addCase(removePost.fulfilled, (draft, action) => {
         //console.log('Before removing post:', draft.mainPosts);
-
-        draft.removePostLoading = false;
-        draft.removePostDone = true;
-      
-        // mainPosts가 배열이 아닌 경우 초기화
-        if (!Array.isArray(draft.mainPosts)) {
-          console.error('mainPosts is not an array or is undefined. Initializing to an empty array.');
-          draft.mainPosts = [];
-        }
-      
-        //  mainPosts에서 postId와 일치하는 게시물 제거
-        draft.mainPosts = draft.mainPosts.filter((v) => String(v.id) !== String(action.payload.postId));
          //console.log('After removing post:', draft.mainPosts);
       //  me.Posts에서도 제거 (로그인 유저의 게시물 목록)
+      draft.removePostLoading = false;
+      draft.removePostDone = true;
+    
+      const postId = String(action.payload.postId);
+    
+      if (!Array.isArray(draft.mainPosts)) {
+        draft.mainPosts = [];
+      }
+    
+      draft.mainPosts = draft.mainPosts.filter((v) => String(v.id) !== postId);
+    
       if (draft.me?.Posts) {
-        draft.me.Posts = draft.me.Posts.filter((v) => v.id !== postId);
+        draft.me.Posts = draft.me.Posts.filter((v) => String(v.id) !== postId);
       }
             })
   
@@ -575,7 +583,7 @@ const postSlice = createSlice({
         draft.updatePostLoading = false;
         draft.updatePostDone = true;
         //draft.mainPosts.find((v) => v.id === action.payload.PostId).content = action.payload.content;
-        const post = draft.mainPosts.find((v) => v.id === action.payload.PostId);
+        const post = draft.mainPosts.find((v) => v.id === action.payload.postId);
         if (post) {
           post.content = action.payload.content;
         }
@@ -592,8 +600,10 @@ const postSlice = createSlice({
         draft.uploadImagesError = null;
       })
       .addCase(uploadImage.fulfilled, (draft, action) => {
-        draft.imagePaths = draft.imagePaths.concat(action.payload);
-        draft.uploadImagesLoading = false;
+       // draft.imagePaths = draft.imagePaths.concat(action.payload);
+       draft.uploadedImages.push(...action.payload);
+ 
+       draft.uploadImagesLoading = false;
         draft.uploadImagesDone = true;
       })
       .addCase(uploadImage.rejected, (draft, action) => {
@@ -612,6 +622,7 @@ const postSlice = createSlice({
         draft.fetchTaggedPostsLoading = false;
         draft.fetchTaggedPostsError = action.payload;
       })
+
   },
 })
 

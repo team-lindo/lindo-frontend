@@ -3,10 +3,30 @@ import AppLayout from '../../components/AppLayout';
 import Head from 'next/head';
 import Link from 'next/link';
 import { Card, List, Typography, Image } from 'antd';
+import { useRouter } from 'next/router';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { getProductById } from '../../reducers/product';
 
 const { Title, Paragraph } = Typography;
 
-const ProductDetailPage = ({ product, taggedPosts }) => {
+const ProductDetailPage = () => {
+  const router = useRouter();
+  const { uid } = router.query;
+  const dispatch = useDispatch();
+  const product = useSelector(state => state.product.product);
+  const taggedPosts = useSelector((state) => state.post.taggedPosts); 
+
+  useEffect(() => {
+    if (uid) {
+      dispatch(getProductById(uid));
+      dispatch(fetchPostsByTaggedProduct(uid));
+    }
+  }, [uid]);
+  
+  if (!product) return <p>로딩 중...</p>;
+
+  
   return (
     <>
       <Head>
@@ -21,7 +41,6 @@ const ProductDetailPage = ({ product, taggedPosts }) => {
             }
             variant={false}
           >
-            <Paragraph>사이즈: {product.size}</Paragraph>
             <Paragraph>가격: ₩{product.price?.toLocaleString()}</Paragraph>
           </Card>
 
@@ -74,26 +93,6 @@ const ProductDetailPage = ({ product, taggedPosts }) => {
   );
 };
 
-export const getStaticProps = async (context) => {
-  const uid = context.params.uid;
- const result = await fetchPostsByTaggedProduct(uid);
-  console.log("📌 태그된 게시글 목록", result.data);
-  const productRes = await fakeApi.getProductById(uid);
-  //const taggedRes = await fakeApi.getPostsByTaggedProduct(uid);
-  return {
-    props: {
-      product: productRes.data,
-      //taggedPosts: taggedRes.data,
-      taggedPosts: result.data,
-    },
-  };
-};
 
-export const getStaticPaths = async () => {
-  return {
-    paths: [],
-    fallback: 'blocking',
-  };
-};
 
 export default ProductDetailPage;

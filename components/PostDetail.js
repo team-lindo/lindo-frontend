@@ -153,6 +153,7 @@ function PostDetail() {
       if (!me) return alert('로그인이 필요합니다.');
       try {
         await dispatch(removePost(postId)); // ✅ 서버 삭제 + Redux 상태 동시 처리
+        //삭제 메세지 추가가
       } catch (err) {
         console.error('Failed to remove post:', err);
       }
@@ -181,7 +182,7 @@ function PostDetail() {
           console.error(err);
         });
     } else {
-      dispatch(bookmark(post)) // ✅ post 전체를 넘겨야 thunk가 생성 가능
+      dispatch(bookmark(post.id)) // ✅ postId 넘겨tj thunk가 생성 가능
         .unwrap()
         .then(() => message.success('북마크에 추가되었습니다!'))
         .catch((err) => {

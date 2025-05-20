@@ -3,19 +3,27 @@ import Image from "next/image";
 import { Button, Row, Col, Modal } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import Router from "next/router";
-import {categories,initialClothes } from "../reducers/product"
+import {categories,initialClothes,deleteProduct} from "../reducers/product"
 
 const ClosetForm = ({ clothesData = initialClothes, showUploadButton = true, isOwner }) => {
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
-  const handlePreview = (url) => {
-    setPreviewImage(url);
+  // const handlePreview = (url) => {
+  //   setPreviewImage(url);
+  //   setPreviewOpen(true);
+  // };
+  const handlePreview = (product) => {
+    setSelectedProduct(product); // 전체 product 객체 저장
     setPreviewOpen(true);
   };
-  
-
+  const handleDelete = async (productId) => {
+    if (confirm("정말 삭제하시겠습니까?")) {
+      await dispatch(deleteProduct(productId));
+    }
+  };
   const handleScrollToCategory = (categoryName) => {
     setSelectedCategory(categoryName);
     const target = document.getElementById(categoryName);
@@ -61,6 +69,11 @@ const ClosetForm = ({ clothesData = initialClothes, showUploadButton = true, isO
           </Button>
         </div>
       )}
+      {isOwner && (
+        <Button danger size="small" onClick={() => handleDelete(item.uid)}>
+          삭제
+        </Button>
+      )}
 
       {isClosetEmpty ? (
         <div className="empty-message">현재 옷장에 등록된 옷이 없습니다.</div>
@@ -74,10 +87,10 @@ const ClosetForm = ({ clothesData = initialClothes, showUploadButton = true, isO
                   <Row gutter={[8, 8]}>
                     {clothesData[category]?.slice(0, 4).map((item) => (
                       <Col key={item.uid} span={12}>
-                      <div className="image-box" onClick={() => handlePreview(item.url)}>
+                      <div className="image-box" onClick={() => handlePreview(item)}>
                         <Image
-                          src={item.url}
-                          alt={category}
+                        src={item.thumbnail}  // ✅ 여기 수정
+                        alt={item.name || category} 
                           //width={200}
                           //height={300}
                           fill
@@ -100,10 +113,29 @@ const ClosetForm = ({ clothesData = initialClothes, showUploadButton = true, isO
           ))}
         </Row>
       )}
+<Modal open={previewOpen} footer={null} onCancel={() => setPreviewOpen(false)} centered>
+  {selectedProduct && (
+    <div style={{ textAlign: 'center' }}>
+      <Image
+        src={selectedProduct.url}
+        alt="Preview"
+        width={300}
+        height={300}
+        style={{ objectFit: "cover", marginBottom: 20 }}
+      />
+      <Title level={4}>{selectedProduct.name}</Title>
+      <Paragraph>브랜드: {selectedProduct.brand}</Paragraph>
+      <Paragraph>가격: ₩{selectedProduct.price?.toLocaleString()}</Paragraph>
+      <Button type="link" onClick={() => {
+        setPreviewOpen(false);
+        Router.push(`/product/${selectedProduct.uid}`);
+      }}>
+        상세 페이지 보기
+      </Button>
+    </div>
+  )}
+</Modal>
 
-      <Modal open={previewOpen} footer={null} onCancel={() => setPreviewOpen(false)} centered>
-       <Image src={previewImage} alt="Preview" width={400} height={400} style={{ objectFit: "cover" }} />
-      </Modal>
 
       <style jsx>{`
         .grid-wrapper {
