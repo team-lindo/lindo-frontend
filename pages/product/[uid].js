@@ -20,7 +20,7 @@ const ProductDetailPage = () => {
   useEffect(() => {
     if (uid) {
       dispatch(getProductById(uid));
-      dispatch(fetchPostsByTaggedProduct(uid));
+   //   dispatch(fetchPostsByTaggedProduct(uid));
     }
   }, [uid]);
   
@@ -44,7 +44,7 @@ const ProductDetailPage = () => {
             <Paragraph>가격: ₩{product.price?.toLocaleString()}</Paragraph>
           </Card>
 
-          <div style={{ marginTop: 40 }}>
+          {/* <div style={{ marginTop: 40 }}>
             <Title level={4}>이 상품이 태그된 게시글</Title>
             <List
               itemLayout="vertical"
@@ -86,7 +86,7 @@ const ProductDetailPage = () => {
                 </List.Item>
               )}
             />
-          </div>
+          </div> */}
         </div>
       </AppLayout>
     </>

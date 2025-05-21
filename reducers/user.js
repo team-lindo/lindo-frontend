@@ -5,7 +5,7 @@ import axiosInstance from '../api/axiosInstance';
 import {initialClothes}from "./product";
 // 이미지 하나에 태깅된 옷 1개 생성
 const generateTaggedProduct = () => {
-  const outerItems = initialClothes["아우터"];
+  const outerItems = initialClothes["outer"];
   const selected = outerItems[Math.floor(Math.random() * outerItems.length)];
 
   return {
@@ -13,7 +13,6 @@ const generateTaggedProduct = () => {
     url: selected.url,
     name: selected.name,
     price: selected.price,
-    size: selected.size,
     x: Math.floor(Math.random() * 100),
     y: Math.floor(Math.random() * 100),
   };
@@ -29,7 +28,7 @@ export const dummyPosts = [
           uid: 'a1',
           name: '봄 코트',
           price: 89000,
-          size: 'L',
+     
           url: '/images/coat1.jpg',
           x: 50,
           y: 30,
@@ -47,7 +46,7 @@ export const dummyPosts = [
           uid: 'a2',
           name: '코트',
           price: 97000,
-          size: 'XL',
+    
           url: '/images/coat2.jpg',
           x: 20,
           y: 60,
@@ -65,7 +64,7 @@ export const dummyPosts = [
           uid: 'a1',
           name: '자켓',
           price: 189000,
-          size: 'L',
+        
           url: '/images/jacket1.jpg',
           x: 80,
           y: 20,
@@ -83,7 +82,7 @@ export const dummyPosts = [
           uid: 'a4',
           name: '여름 자켓',
           price: 89000,
-          size: 'L',
+      
           url: '/images/jacket2.jpg',
           x: 80,
           y: 20,
@@ -107,7 +106,7 @@ export const fetchPostsByTaggedProduct = createAsyncThunk(
   'post/fetchPostsByTaggedProduct',
   async (uid, thunkAPI) => {
     try {
-      const response = await axiosInstance.get(`/api/products/${uid}/posts`);
+      const response = await axiosInstance.get(`/products/${uid}/posts`);
       return response.data; // 게시글 배열
     } catch (error) {
       return thunkAPI.rejectWithValue(error.response?.data || error.message);
@@ -363,7 +362,7 @@ const initialState = {
   changeNicknameError: null,
 
 };
-// http://api.lindohub.com/api/v1/app/users/login
+// https://api.lindohub.com/api/v1/app/users/login
 export const logIn = createAsyncThunk('user/logIn', async (data, { rejectWithValue }) => {
   try {
     const response = await axiosInstance.post('/users/login', data); 
@@ -392,7 +391,7 @@ export const follow = createAsyncThunk(
   'user/follow',
   async (data, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.patch(`/follow/${data}`); // ✅ 수정된 경로
+      const response = await axiosInstance.patch(`/follow/${id}`); // ✅ 수정된 경로
       return response.data; // 서버에서 UserDTO 전체 반환
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -403,7 +402,7 @@ export const follow = createAsyncThunk(
 
 export const unfollow = createAsyncThunk('user/unfollow', async (data, { rejectWithValue }) => {
   try {
-    const response = await axiosInstance.delete(`/follow/${data}`);
+    const response = await axiosInstance.delete(`/follow/${id}`);
     return response.data; // ✅ { id: number } 형태로 반환
   } catch (error) {
     return rejectWithValue(error.response?.data || error.message);
@@ -425,7 +424,7 @@ export const loadFollowings = createAsyncThunk(
   'user/loadFollowings',
   async ({ limit = 10, offset = 0 } = {}, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get('/user/me/followings', {
+      const response = await axiosInstance.get('/users/me/followings', {
        params: { limit, offset },
       });
       return response.data; // 응답이 FollowingDTO[] 형태라고 가정
@@ -440,7 +439,7 @@ export const loadFollowers = createAsyncThunk(
   'user/loadFollowers',
   async ({ limit = 20, offset = 0 } = {}, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get('/user/followers', {
+      const response = await axiosInstance.get('/users/me/followers', {
         params: { limit, offset },
       });
       return response.data; // ✅ FollowerDTO[]  // 응답 구조: { users: [...], totalCount: 53 }
@@ -454,7 +453,7 @@ export const loadFollowers = createAsyncThunk(
 // 현재 로그인한 사용자(me)의 정보를 가져옴
 export const loadMyInfo = createAsyncThunk('/user/loadMyInfo', async (_, { rejectWithValue }) => {
   try {
-    const response = await axiosInstance.get('/user/me'); // ✅ 명세대로 수정
+    const response = await axiosInstance.get('/users/me'); // ✅ 명세대로 수정
     return response.data; // ✅ UserDTO 형식
   } catch (error) {
     return rejectWithValue(error.response?.data || "유저 정보 가져오기 실패");
@@ -491,7 +490,7 @@ export const loadMyInfo = createAsyncThunk('/user/loadMyInfo', async (_, { rejec
 
 export const fetchUserProfile = createAsyncThunk('user/fetchUserProfile', async (id, { rejectWithValue }) => {
   try {
-    const response = await axiosInstance.get(`/user/profile/${id}`); 
+    const response = await axiosInstance.get(`/users/profile/${id}`); 
     console.log("프로필 응답:", response.data);
     return response.data; // 여기에는 Posts, Followings, Followers 다 포함됨
   } catch (error) {
@@ -499,20 +498,6 @@ export const fetchUserProfile = createAsyncThunk('user/fetchUserProfile', async 
     return rejectWithValue(error.response?.data || error.message);
   }
 });
-
-export const getPosts = createAsyncThunk(
-  'user/getPosts',
-  async ({ page = 1, limit = 10 } = {}, { rejectWithValue }) => {
-    try {
-      const response = await axiosInstance.get('/posts', {
-        params: { page, limit },
-      });
-      return response.data; // MinimalPostDTO[]
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
 
 
 const userSlice = createSlice({
@@ -808,19 +793,6 @@ const userSlice = createSlice({
       .addCase(loadFollowings.rejected, (draft, action) => {
         console.error('팔로잉 목록  불러오기 실패:', action.payload);
         draft.me = null;
-      })
-      .addCase(getPosts.pending, (draft) => {
-        draft.getPostsLoading = true;
-        draft.getPostsError = null;
-      })
-      .addCase(getPosts.fulfilled, (draft, action) => {
-        draft.getPostsLoading = false;
-        draft.posts = action.payload;
-      })
-      .addCase(getPosts.rejected, (draft, action) => {
-        draft.getPostsLoading = false;
-        draft.getPostsError = action.payload || '에러 발생';
-        console.error('posts를 가져오기 실패:', action.payload);
       })
       
   },
