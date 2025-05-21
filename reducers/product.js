@@ -134,7 +134,7 @@ export const addProduct = createAsyncThunk(
   'product/addProduct',
   async (product, thunkAPI) => {
     try {
-      const response = await axiosInstance.post('/api/product', product);
+      const response = await axiosInstance.post('/closet/me/product', product);
       return response.data;  // 응답: newProduct
     } catch (error) {
       return thunkAPI.rejectWithValue(error.response?.data || error.message);
@@ -146,7 +146,7 @@ export const deleteProduct = createAsyncThunk(
   'product/deleteProduct',
   async (productId, thunkAPI) => {
     try {
-      await axiosInstance.delete(`/api/product/${productId}`);
+      await axiosInstance.delete(`/closet/me/product/${productId}`);
       return response.data.deletedId; // ✅ deletedId만 반환
     } catch (error) {
       return thunkAPI.rejectWithValue(error.response?.data || error.message);
@@ -173,7 +173,7 @@ export const getProductById = createAsyncThunk(
   'product/getProductById',
   async (uid, thunkAPI) => {
     try {
-      const response = await axiosInstance.get(`/api/product/${uid}`);
+      const response = await axiosInstance.get(`closet/me/product/${productId}'}`);
       return response.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(error.response?.data || error.message);
