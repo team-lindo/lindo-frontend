@@ -134,25 +134,30 @@ export const addProduct = createAsyncThunk(
   'product/addProduct',
   async (product, thunkAPI) => {
     try {
-      const response = await axiosInstance.post('/api/product', product);
-      return response.data;  // 응답: newProduct
+      const newProduct = {
+        ...product,
+        uid: product.uid || shortId.generate(), // 더미 uid 생성
+        imageUrl: product.imageUrl || '/images/default.png',
+      };
+      return newProduct; // 서버 대신 즉시 반환
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data || error.message);
+      return thunkAPI.rejectWithValue(error.message);
     }
   }
 );
 
 export const deleteProduct = createAsyncThunk(
   'product/deleteProduct',
-  async (productId, thunkAPI) => {
+  async (deletedId, thunkAPI) => {
     try {
-      await axiosInstance.delete(`/api/product/${productId}`);
-      return response.data.deletedId; // ✅ deletedId만 반환
+      // fakeApi라 실제 삭제는 안하지만 deletedId만 반환
+      return deletedId;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data || error.message);
+      return thunkAPI.rejectWithValue(error.message);
     }
   }
 );
+
 
 // export const updateProduct = createAsyncThunk(
 //   'product/updateProduct',
@@ -173,10 +178,10 @@ export const getProductById = createAsyncThunk(
   'product/getProductById',
   async (uid, thunkAPI) => {
     try {
-      const response = await axiosInstance.get(`/api/product/${uid}`);
+      const response = await fakeApi.getProductById(uid);
       return response.data;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data || error.message);
+      return thunkAPI.rejectWithValue(error.message);
     }
   }
 );
@@ -193,18 +198,18 @@ export const getProductById = createAsyncThunk(
 //     }
 //   }
 // );
-
 export const fetchClosetData = createAsyncThunk(
   'product/fetchClosetData',
   async (_, thunkAPI) => {
     try {
-      const response = await axiosInstance.get('/closet/me');
-      return response.data.closetItems; // 서버 응답
+      const response = await fakeApi.me();
+      return response.data.closetItems || [];
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data || error.message);
+      return thunkAPI.rejectWithValue(error.message);
     }
   }
 );
+
 
 const productSlice = createSlice({
   name: 'product',

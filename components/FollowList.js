@@ -6,8 +6,8 @@ import Link from "next/link";
 import { useDispatch } from 'react-redux';
 import { loadFollowers, follow, unfollow } from '../reducers/user'
 
-const FollowList = ({ header, data = [] }) => {
-  <FollowList header="팔로워" data={followersList} totalCount={followersCount} />
+const FollowList = ({ header, data = [] , totalCount = 0}) => {
+  //<FollowList header="팔로워" data={followersList} totalCount={followersCount} />
 
   const [followStatus, setFollowStatus] = useState(
     data.reduce((acc, user) => {

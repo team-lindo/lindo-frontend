@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import Router from "next/router";
 import Head from "next/head";
 import AppLayout from "../../components/AppLayout";
-import OtherUserProfile from "../../components/OtherUserProfile";
+import UserProfile from "../../components/UserProfile";
 
 
 const Profile = () => {
@@ -29,7 +29,7 @@ const Profile = () => {
       </Head>
       <AppLayout>
         <div style={{ padding: '0 200px' }}> 
-          <OtherUserProfile UserProfile userId={me.id} />
+          <UserProfile userId={me.id} />
 
           {/* <FollowList header="팔로워 목록" data={me?.Followers ?? followerList} />
           <FollowList header="팔로잉 목록" data={me?.Followings ?? followingList} /> */}

@@ -5,7 +5,7 @@ import axiosInstance from '../api/axiosInstance';
 import {initialClothes}from "./product";
 // 이미지 하나에 태깅된 옷 1개 생성
 const generateTaggedProduct = () => {
-  const outerItems = initialClothes["아우터"];
+  const outerItems = initialClothes["outer"];
   const selected = outerItems[Math.floor(Math.random() * outerItems.length)];
 
   return {
@@ -13,7 +13,6 @@ const generateTaggedProduct = () => {
     url: selected.url,
     name: selected.name,
     price: selected.price,
-    size: selected.size,
     x: Math.floor(Math.random() * 100),
     y: Math.floor(Math.random() * 100),
   };
@@ -47,7 +46,6 @@ export const dummyPosts = [
           uid: 'a2',
           name: '코트',
           price: 97000,
-          size: 'XL',
           url: '/images/coat2.jpg',
           x: 20,
           y: 60,
@@ -65,7 +63,6 @@ export const dummyPosts = [
           uid: 'a1',
           name: '자켓',
           price: 189000,
-          size: 'L',
           url: '/images/jacket1.jpg',
           x: 80,
           y: 20,
@@ -83,7 +80,6 @@ export const dummyPosts = [
           uid: 'a4',
           name: '여름 자켓',
           price: 89000,
-          size: 'L',
           url: '/images/jacket2.jpg',
           x: 80,
           y: 20,
@@ -94,14 +90,28 @@ export const dummyPosts = [
 ];
 
 //Images 배열에서 taggedProductsByImage 자동 생성
-export const getTaggedProductsByImage = (images) => {
-  const result = {};
-  for (const image of images) {
-    result[image.id] = [
-      generateTaggedProduct(), // 이미지당 1개만 태그 (원하면 여러 개도 가능)
+// export const getTaggedProductsByImage = (images) => {
+//   const result = {};
+//   for (const image of images) {
+//     result[image.id] = [
+//       generateTaggedProduct(), // 이미지당 1개만 태그 (원하면 여러 개도 가능)
+//     ];
+//   }
+//   return result;
+// };
+const getTaggedProductsByImage = (images) => {
+  // 적절한 mock 데이터 생성
+  return images.reduce((acc, img) => {
+    acc[img.id] = [
+      {
+        uid: "product-1",
+        name: "샘플 상품",
+        price: 10000,
+        position: { x: 50, y: 50 },
+      },
     ];
-  }
-  return result;
+    return acc;
+  }, {});
 };
 export const fetchPostsByTaggedProduct = createAsyncThunk(
   'post/fetchPostsByTaggedProduct',
@@ -116,57 +126,107 @@ export const fetchPostsByTaggedProduct = createAsyncThunk(
 );
 
 const images = [{ id: 1, src: "/images/test.jpg" }];
+const images2 = [{ id: 2, src: "/images/test2.jpg" }];
+const images3 = [{ id: 3, src: "/images/test3.jpg" }];
+const images5 = [{ id: 5, src: "/images/test1.jpg" }];
 
 
 export const fakeApi = {
-  me: async () => ({
-    data: {
-      id: 1,
-      nickname: "test",
-      email: "test@example.com",
-      profileImageUrl: "/images/profile.jpg",
+  me: async () => {
+    const posts = [
+      {
+        id: 1,
+        content: "test의 게시물 #여름 #반팔",
+        Images: images,
+        thumbnail: images[0].src,
+        hashtags: ["여름", "반팔"],
+        taggedProductsByImage: getTaggedProductsByImage(images),
+      },
+    ];
   
-      // 내 팔로잉/팔로워
-      Followings: [
-        { id: 2, nickname: "test2" },
-        { id: 3, nickname: "test3" },
-        { id: 5, nickname: "test1" },
-      ],
-      Followers: [
-        { id: 2, nickname: "test2" },
-        { id: 3, nickname: "test3" },
-        { id: 4, nickname: "test4" },
-        { id: 5, nickname: "test1" },
-      ],
+    const followings = [
+      {
+        id: 2,
+        nickname: "test2",
+        Posts: [
+          {
+            id: 2,
+            content: "test2의 게시물",
+            Images: images2,
+            thumbnail: images2[0].src,
+            hashtags: [],
+            taggedProductsByImage: getTaggedProductsByImage(images2),
+          },
+        ],
+      },
+      {
+        id: 3,
+        nickname: "test3",
+        Posts: [
+          {
+            id: 3,
+            content: "test3의 게시물",
+            Images: images3,
+            thumbnail: images3[0].src,
+            hashtags: [],
+            taggedProductsByImage: getTaggedProductsByImage(images3),
+          },
+        ],
+      },
+      {
+        id: 5,
+        nickname: "test1",
+        Posts: [
+          {
+            id: 5,
+            content: "test1의 게시물 #봄 #가을",
+            Images: images5,
+            thumbnail: images5[0].src,
+            hashtags: ["봄", "가을"],
+            taggedProductsByImage: getTaggedProductsByImage(images5),
+          },
+        ],
+      },
+    ];
   
-      // 내 게시글
-      Posts: [
-        {
-          id: 1,
-          content: "test의 게시물 #여름 #반팔",
-          Images: images,
-          thumbnail: images[0].src,
-          hashtags: ["여름", "반팔"],
-          taggedProductsByImage: getTaggedProductsByImage(images),
-        },
-      ],
+    const followers = [
+      { id: 2, nickname: "test2" },
+      { id: 3, nickname: "test3" },
+      { id: 4, nickname: "test4" },
+      { id: 5, nickname: "test1" },
+    ];
   
-      savedItems: [
-        { id: 1, name: '청바지', imageUrl: '/images/jeans1.jpg' },
-        { id: 2, name: '셔츠', imageUrl: '/images/knit1.jpg' },
-      ],
-      likedPosts: [],
-      bookmarkedPosts: [],
-     },
-  }),
+    return {
+      data: {
+        id: 1,
+        nickname: "test",
+        email: "test@example.com",
+  
+        Posts: posts,
+        Followers: followers,
+        Followings: followings,
+  
+        postsCount: posts.length,
+        followersCount: followers.length,
+        followingsCount: followings.length,
+  
+        savedItems: [
+          { id: 1, name: '청바지', imageUrl: '/images/jeans1.jpg' },
+          { id: 2, name: '셔츠', imageUrl: '/images/knit1.jpg' },
+        ],
+        likedPosts: [],
+        bookmarkedPosts: [],
+      }
+    };
+  },
+  
   getProductById: async (uid) => {
-    const found = initialClothes["아우터"].find((p) => p.uid === uid); // ✅ 여기가 핵심
+    const found = initialClothes["outer"].find((p) => p.uid === uid); // ✅ 여기가 핵심
     return {
       data: found ?? {
         uid,
         name: '알 수 없음',
         price: 0,
-        size: 'N/A',
         url: '/default-image.png',
       },
     };
@@ -198,6 +258,8 @@ export const fakeApi = {
           id: 1,
           nickname: "test",
           content:  "test의 게시물 #여름 #반팔" ,
+          Images: [{ id: 11, src: "/images/test1.jpg" }],
+          thumbnail: "/images/test1.jpg",
         },
       ],
       Followers: [{ id: 1, nickname: "test" }],
@@ -211,7 +273,7 @@ export const fakeApi = {
         data: {
           id: 2,
           nickname: "test2",
-          profileImageUrl: "/images/user2.jpg",
+      
           Posts: [
             {
               id: 2,
@@ -229,7 +291,6 @@ export const fakeApi = {
         data: {
           id: 3,
           nickname: "test3",
-          profileImageUrl: "/images/user3.jpg",
           Posts: [
             {
               id: 3,
@@ -321,7 +382,7 @@ export const initialUserProfile = {
     id: null,
     nickname: null,
     email: null,
-    profileImageUrl: null, 
+   
 postsCount: 0,
 closetItems: [],     // 해당 유저의 옷장 아이템들
   };
@@ -358,161 +419,91 @@ const initialState = {
   unfollowLoading: false,//언팔로우 시도중
   unfollowDone: false,
   unfollowError: null,
-  changeNicknameLoading: false,
-  changeNicknameDone: false,
-  changeNicknameError: null,
 
 };
-// http://api.lindohub.com/api/v1/app/users/login
-export const logIn = createAsyncThunk('user/logIn', async (data, { rejectWithValue }) => {
+
+export const logIn = createAsyncThunk('user/logIn', async (_, { rejectWithValue }) => {
   try {
-    const response = await axiosInstance.post('/users/login', data); 
-    console.log("로그인 API 응답:", response.data);
+    const response = await fakeApi.login();
     return response.data;
   } catch (error) {
-    console.error("로그인 에러 발생:", error.response?.data || error.message);
-    return rejectWithValue(error.response?.data || error.message);
+    return rejectWithValue(error.message);
   }
 });
 
-
-export const logOut = createAsyncThunk(
-  "user/logOut",
-  async (_, { rejectWithValue }) => { 
-    try {
-      const response = await axiosInstance.post('/users/logout', {}, { withCredentials: true });
-      return response.data; // 👈 여기서 response.data가 { message: "Logged out successfully" } 형태여야 함
-    } catch (error) {
-      return rejectWithValue(error.response?.data || "로그아웃 실패");
-    }
-  }
-);
-
-export const follow = createAsyncThunk(
-  'user/follow',
-  async (data, { rejectWithValue }) => {
-    try {
-      const response = await axiosInstance.patch(`/follow/${data}`); // ✅ 수정된 경로
-      return response.data; // 서버에서 UserDTO 전체 반환
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
-
-
-export const unfollow = createAsyncThunk('user/unfollow', async (data, { rejectWithValue }) => {
+export const logOut = createAsyncThunk('user/logOut', async (_, { rejectWithValue }) => {
   try {
-    const response = await axiosInstance.delete(`/follow/${data}`);
-    return response.data; // ✅ { id: number } 형태로 반환
+    const response = await fakeApi.logout();
+    return response;
   } catch (error) {
-    return rejectWithValue(error.response?.data || error.message);
+    return rejectWithValue(error.message);
   }
 });
 
-export const signup = createAsyncThunk('user/signup', async (data, { rejectWithValue }) => {
+export const follow = createAsyncThunk('user/follow', async (id, { rejectWithValue }) => {
   try {
-    const response = await axiosInstance.post('/users/signup', data); // ✅ 경로 수정
-    return response.data; // { id, nickname } 형태여야 함
+    const response = await fakeApi.follow(id);
+    return response.data;
   } catch (error) {
-    return rejectWithValue(error.response?.data || error.message);
+    return rejectWithValue(error.message);
   }
 });
 
-
-//현재 로그인된 유저의 팔로잉 목록을 불러오는 함수
-export const loadFollowings = createAsyncThunk(
-  'user/loadFollowings',
-  async ({ limit = 10, offset = 0 } = {}, { rejectWithValue }) => {
-    try {
-      const response = await axiosInstance.get('/user/me/followings', {
-       params: { limit, offset },
-      });
-      return response.data; // 응답이 FollowingDTO[] 형태라고 가정
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
-
-// 현재 로그인된 유저의 팔로워 목록을 불러오는 함수
-export const loadFollowers = createAsyncThunk(
-  'user/loadFollowers',
-  async ({ limit = 20, offset = 0 } = {}, { rejectWithValue }) => {
-    try {
-      const response = await axiosInstance.get('/user/followers', {
-        params: { limit, offset },
-      });
-      return response.data; // ✅ FollowerDTO[]  // 응답 구조: { users: [...], totalCount: 53 }
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
-//dispatch(loadFollowers({ limit: 10, offset: 0 }));
-
-// 현재 로그인한 사용자(me)의 정보를 가져옴
-export const loadMyInfo = createAsyncThunk('/user/loadMyInfo', async (_, { rejectWithValue }) => {
+export const unfollow = createAsyncThunk('user/unfollow', async (id, { rejectWithValue }) => {
   try {
-    const response = await axiosInstance.get('/user/me'); // ✅ 명세대로 수정
-    return response.data; // ✅ UserDTO 형식
+    const response = await fakeApi.unfollow(id);
+    return response.data;
   } catch (error) {
-    return rejectWithValue(error.response?.data || "유저 정보 가져오기 실패");
+    return rejectWithValue(error.message);
   }
 });
 
+export const signup = createAsyncThunk('user/signup', async (_, { rejectWithValue }) => {
+  try {
+    const response = await fakeApi.signup();
+    return response.data;
+  } catch (error) {
+    return rejectWithValue(error.message);
+  }
+});
 
-//특정 유저의 정보를 가져옴.data는 해당 유저의 userId.예: 프로필 페이지에 들어갈 때 GET /user/5 호출해서 해당 유저 정보 받아옴
-// export const loadUser = createAsyncThunk(
-//   'user/loadUser',
-//   async (userId, thunkAPI) => {
-//     try {
-//       const user = await fakeApi.getUserById(userId);
-//       if (!user) throw new Error('User not found');
-//       return user.data;
-//     } catch (error) {
-//       return thunkAPI.rejectWithValue(error.message);
-//     }
-//   }
-// )
-// export const fetchUserProfile = createAsyncThunk(
-//   'user/fetchUserProfile',
-//   async (id, { rejectWithValue }) => {
-//     try {
-//       const response = await fakeApi.getUserById(id);
-//       if (!response || !response.data) throw new Error("User not found");
-//       return response.data;
-//     } catch (error) {
-//       console.error("프로필 불러오기 실패:", error.message);
-//       return rejectWithValue(error.message); // ✅ 이렇게 수정
-//     }
-//   }
-// );
+export const loadFollowings = createAsyncThunk('user/loadFollowings', async (_, { rejectWithValue }) => {
+  try {
+    const me = await fakeApi.me();
+    return { users: me.data.Followings, totalCount: me.data.Followings.length };
+  } catch (error) {
+    return rejectWithValue(error.message);
+  }
+});
+
+export const loadFollowers = createAsyncThunk('user/loadFollowers', async (_, { rejectWithValue }) => {
+  try {
+    const me = await fakeApi.me();
+    return { users: me.data.Followers, totalCount: me.data.Followers.length };
+  } catch (error) {
+    return rejectWithValue(error.message);
+  }
+});
+
+export const loadMyInfo = createAsyncThunk('user/loadMyInfo', async (_, { rejectWithValue }) => {
+  try {
+    const response = await fakeApi.me();
+    return response.data;
+  } catch (error) {
+    return rejectWithValue(error.message);
+  }
+});
 
 export const fetchUserProfile = createAsyncThunk('user/fetchUserProfile', async (id, { rejectWithValue }) => {
   try {
-    const response = await axiosInstance.get(`/user/profile/${id}`); 
-    console.log("프로필 응답:", response.data);
-    return response.data; // 여기에는 Posts, Followings, Followers 다 포함됨
+    const response = await fakeApi.getUserById(id);
+    if (!response || !response.data) throw new Error("User not found");
+    return response.data;
   } catch (error) {
-    console.error("프로필 불러오기 실패:", error.response?.data || error.message);
-    return rejectWithValue(error.response?.data || error.message);
+    return rejectWithValue(error.message);
   }
 });
 
-export const getPosts = createAsyncThunk(
-  'user/getPosts',
-  async ({ page = 1, limit = 10 } = {}, { rejectWithValue }) => {
-    try {
-      const response = await axiosInstance.get('/posts', {
-        params: { page, limit },
-      });
-      return response.data; // MinimalPostDTO[]
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
 
 
 const userSlice = createSlice({
@@ -809,19 +800,7 @@ const userSlice = createSlice({
         console.error('팔로잉 목록  불러오기 실패:', action.payload);
         draft.me = null;
       })
-      .addCase(getPosts.pending, (draft) => {
-        draft.getPostsLoading = true;
-        draft.getPostsError = null;
-      })
-      .addCase(getPosts.fulfilled, (draft, action) => {
-        draft.getPostsLoading = false;
-        draft.posts = action.payload;
-      })
-      .addCase(getPosts.rejected, (draft, action) => {
-        draft.getPostsLoading = false;
-        draft.getPostsError = action.payload || '에러 발생';
-        console.error('posts를 가져오기 실패:', action.payload);
-      })
+
       
   },
 });

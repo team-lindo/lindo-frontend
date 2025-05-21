@@ -23,21 +23,25 @@ const Home = () => {
   //   }
   // }, [dispatch, isLoggedIn]);
 
-  // useEffect(() => {
-  //   setClientLoaded(true);
-  // }, []);
+  useEffect(() => {
+    setClientLoaded(true);
+  }, []);
 
-  // ✅ 표시할 게시물 정리
+  // ✅ 표시할 게시물 정리: if 블록 밖에서 선언
   let visiblePosts = [];
+
   if (isLoggedIn) {
     const followingsPosts = me.Followings?.flatMap(f => f.Posts || []) || [];
-    visiblePosts = followingsPosts.map(post => ({
+    const myPosts = me.Posts || [];
+
+    visiblePosts = [...myPosts, ...followingsPosts].map(post => ({
       ...post,
       User: post.User || { id: me.id, nickname: me.nickname },
     }));
-  } else {
-    visiblePosts = posts;
   }
+  console.log("me:", me);
+console.log("visiblePosts:", visiblePosts);
+
 
   return (
     <>

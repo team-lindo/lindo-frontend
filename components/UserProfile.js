@@ -20,8 +20,11 @@ const UserProfile = ({ userId: propUserId }) => {
   const user = me.id === userId ? me : profileUser;
   const followingsList = useSelector((state) => state.user.followingsList);
   const followersList = useSelector((state) => state.user.followersList);
-  
+  const followersCount = followersList.length;
+  const followingsCount = followingsList.length;
   const posts = user?.Posts || [];
+  console.log("✅ posts 구조 확인:", posts);
+
   const [viewedUser, setViewedUser] = useState(null);
   const [postsVisible, setPostsVisible] = useState(true);
   const [followerModalVisible, setFollowerModalVisible] = useState(false);
@@ -35,6 +38,9 @@ const UserProfile = ({ userId: propUserId }) => {
   
   // userId 설정 (router or props)
 
+  if (me && Array.isArray(me.Followings)) {
+    console.log(me.Followings.length); // 안전하게 접근
+  }
   useEffect(() => {
     if (!userId && me && !propUserId && !router.query.id) {
       setUserId(me.id);
@@ -111,7 +117,9 @@ useEffect(() => {
   if (!user) return null;
   console.log("🔥 현재 게시글 목록:", posts);
 
-
+  posts.forEach((post, i) => {
+    console.log(`[${i}] post.id:`, post.id, "| typeof:", typeof post.id);
+  });
   return (
     <>
       <Card
@@ -202,8 +210,9 @@ useEffect(() => {
 
       {postsVisible && posts.length > 0 && (
   <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", marginTop: "16px" }}>
+   
     {posts.map((post) => (
-      <Link href={`/post/${post.id.id}`} key={post.id.id}>
+      <Link href={`/post/${post.id}`} key={post.id}>
         
         <div
           style={{
@@ -233,7 +242,7 @@ useEffect(() => {
   footer={null}
   onCancel={() => setFollowingModalVisible(false)}
 >
-  <FollowList header="팔로잉" data={followingsList} />
+  <FollowList header="팔로잉" data={followingsList} totalCount={followingsCount}  />
 </Modal>
 
 <Modal
@@ -242,7 +251,7 @@ useEffect(() => {
   footer={null}
   onCancel={() => setFollowerModalVisible(false)}
 >
-  <FollowList header="팔로워" data={followersList} />
+  <FollowList header="팔로워" data={followersList} totalCount={followersCount}  />
 </Modal>
 
     </>
