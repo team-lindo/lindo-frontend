@@ -360,7 +360,8 @@ const initialState = {
   changeNicknameLoading: false,
   changeNicknameDone: false,
   changeNicknameError: null,
-
+  getPostLoading: false,
+  getPostError: null,
 };
 // https://api.lindohub.com/api/v1/app/users/login
 export const logIn = createAsyncThunk('user/logIn', async (data, { rejectWithValue }) => {
@@ -499,7 +500,19 @@ export const fetchUserProfile = createAsyncThunk('user/fetchUserProfile', async 
   }
 });
 
-
+export const getPosts = createAsyncThunk(
+  'user/getPosts',
+  async ({ page = 1, limit = 10 } = {}, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get('/posts', {
+      //  params: { page, limit },
+      });
+      return response.data; // MinimalPostDTO[]
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
 const userSlice = createSlice({
   name: 'user',
   initialState,
@@ -667,7 +680,7 @@ const userSlice = createSlice({
 
       .addCase(likePost.fulfilled, (draft, action) => {
         if (!draft.likedPosts) draft.likedPosts = [];
-        draft.likedPosts.push(action.payload);
+        draft.likedPosts.push(action.payload);// ✅ 여기 payload = { id, thumbnail, User }
       
         if (!draft.me) draft.me = { likedPosts: [] };
         if (!draft.me.likedPosts) draft.me.likedPosts = [];
@@ -794,6 +807,19 @@ const userSlice = createSlice({
         console.error('팔로잉 목록  불러오기 실패:', action.payload);
         draft.me = null;
       })
+      .addCase(getPosts.pending, (draft) => {
+        draft.getPostsLoading = true;
+        draft.getPostsError = null;
+      })
+      .addCase(getPosts.fulfilled, (draft, action) => {
+        draft.getPostsLoading = false;
+        draft.posts = action.payload;
+      })
+      .addCase(getPosts.rejected, (draft, action) => {
+        draft.getPostsLoading = false;
+        draft.getPostsError = action.payload || '에러 발생';
+        console.error('posts를 가져오기 실패:', action.payload);
+      })  
       
   },
 });

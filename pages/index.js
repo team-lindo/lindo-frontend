@@ -17,15 +17,15 @@ const Home = () => {
   const [clientLoaded, setClientLoaded] = useState(false);
 
   // ✅ 비로그인 유저: 서버에서 게시물 불러오기
-  // useEffect(() => {
-  //   if (!isLoggedIn) {
-  //     dispatch(getPosts({ page: 1, limit: 10 }));
-  //   }
-  // }, [dispatch, isLoggedIn]);
+  useEffect(() => {
+    if (!isLoggedIn) {
+      dispatch(getPosts({ page: 1, limit: 10 }));
+    }
+  }, [dispatch, isLoggedIn]);
 
-  // useEffect(() => {
-  //   setClientLoaded(true);
-  // }, []);
+  useEffect(() => {
+    setClientLoaded(true);
+  }, []);
 
   // ✅ 표시할 게시물 정리
   let visiblePosts = [];

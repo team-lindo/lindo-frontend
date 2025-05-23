@@ -230,7 +230,7 @@ function PostDetail() {
                 key="more"
                 content={
                   <Space>
-                    {String(post.User.id) === String(me?.id) ? (
+                    {String(post.User?.id) === String(me?.id) ? (
                       <>
                         {!post.BookMarkId && <Button onClick={onClickUpdate}>수정</Button>}
                         <Button danger loading={removePostLoading} onClick={() => onRemovePost(post.id)}>삭제</Button>

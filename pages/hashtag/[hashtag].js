@@ -31,13 +31,21 @@ const HashtagPage = () => {
           {posts.map((post) => (
             <Link key={post.id} href={`/post/${post.id}`}>
               <div style={{ width: 200, height: 200, overflow: 'hidden', borderRadius: 8 }}>
-                <Image
+                {/* <Image
                   src={post.Images?.[0]?.src || '/default-image.png'}
                   alt="게시물 썸네일"
                   width={200}
                   height={200}
                   style={{ objectFit: 'cover' }}
-                />
+                /> */}
+                <Image
+  src={post.thumbnail || '/default-image.png'}
+  alt="게시물 썸네일"
+  width={200}
+  height={200}
+  style={{ objectFit: 'cover' }}
+/>
+
               </div>
             </Link>
           ))}

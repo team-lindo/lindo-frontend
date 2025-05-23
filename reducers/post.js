@@ -292,7 +292,7 @@ export const uploadImage = createAsyncThunk(
         formData.append('images', images);
       }
 
-      const response = await axiosInstance.post('/post/upload/images', formData, {
+      const response = await axiosInstance.post('post/{postId}/upload/images', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
