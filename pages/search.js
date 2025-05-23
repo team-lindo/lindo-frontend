@@ -38,7 +38,10 @@ const SearchPage = () => {
       />
   
       {loading ? (
-        <Spin tip="검색 중..." />
+        <Spin tip="로딩 중입니다." spinning={true}>
+  <div style={{ height: 100 }} />
+</Spin>
+
       ) : result ? (
         <Tabs defaultActiveKey="hashtags">
           <Tabs.TabPane tab="게시글" key="hashtags">

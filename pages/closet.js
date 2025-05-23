@@ -4,36 +4,45 @@ import { useEffect } from "react";
 import Head from "next/head";
 import AppLayout from "../components/AppLayout";
 import ClosetForm from "../components/ClosetForm";
-import  { initialClothes,fetchClosetData } from "../reducers/product";
+import  { setClosetItems, initialClothes, fetchClosetData } from "../reducers/product";
 
 const Closet = () => {
   const { me } = useSelector((state) => state.user || {}); 
   const router = useRouter();
   const dispatch = useDispatch();
   const { closetItems, fetchClosetLoading } = useSelector((state) => state.product);
+
   useEffect(() => {
     if (!me) {
-      router.push("/login"); // push를 사용하면 유저가 뒤로 가기를 할 수 있음.
+      router.push("/login");
     }
   }, [me, router]);
 
+useEffect(() => {
+  if (me?.id) {
+    dispatch(fetchClosetData()).then((result) => {
+      const clothes = result.payload;
+      if (!clothes || clothes.length === 0) {
+        dispatch(setClosetItems(initialClothes));
+         console.log("옷장 데이터 응답:", result);  // 더미 옷장 사용
+      }
+    });
+  }
+}, [me]);
 
-  if (typeof window !== "undefined" && !me) {
-  return null; // 클라이언트에서만 실행하도록 체크
-}
 
-  useEffect(() => {
-    if (me?.id) dispatch(fetchClosetData());
-  }, [me]);
-  
-return (
+  // ✅ 여기서 조건부 렌더링 (return null 제거)
+  if (!me) {
+    return <div>Loading...</div>; // 또는 스피너 등
+  }
+
+  return (
     <>
       <Head>
         <title>closet</title>
       </Head>
       <AppLayout>
-        <ClosetForm 
-        clothesData={closetItems } isOwner={true}/>
+        <ClosetForm clothesData={closetItems} isOwner={true} />
       </AppLayout>
     </>
   );

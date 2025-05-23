@@ -13,6 +13,9 @@ const PostUploadForm = () => {
   const router = useRouter(); 
   const dispatch = useDispatch();
   const clothes = useSelector((state) => state.product.initialClothes);
+console.log('초기 옷장 데이터:', clothes);
+
+
   const [selected, setSelected] = useState([]);
   const [hashtags, setHashtags] = useState([]); 
   const [taggedProductsByImage, setTaggedProductsByImage] = useState({}); // 기존 tagsByImage  
@@ -21,10 +24,11 @@ const PostUploadForm = () => {
   const { me , profileUser} = useSelector((state) => state.user);
   const uploadImage = useSelector((state) => state.post.uploadedImages);
   const [imageFiles, setImageFiles] = useState([]);
-const user = useMemo(() => {
-  if (!me) return null;
-  return me.id === profileUser?.id ? me : profileUser;
-}, [me, profileUser]);
+  const [uploadedImages, setUploadedImages] = useState([]); // 서버에서 받은 URL들
+    const user = useMemo(() => {
+      if (!me) return null;
+      return me.id === profileUser?.id ? me : profileUser;
+    }, [me, profileUser]);
 
   // ✅ 게시 시 호출되는 함수 내부에 dispatch 코드 포함
   const handleSubmit = async () => {
@@ -102,7 +106,10 @@ dispatch(clearUploadedImages());
     if (me?.id) dispatch(fetchClosetData());
   }, [me]);
   
-  
+  useEffect(() => {
+  console.log('옷장 데이터:', clothes); // 이게 빈 배열인지 확인
+}, [clothes]);
+
   const handleSelect = (item) => {
     setSelected(prev =>
       prev.find(i => i.uid === item.uid)
@@ -137,8 +144,9 @@ dispatch(clearUploadedImages());
         {/* 이미지 업로드 + 태깅 */}
         <TaggableImageUploader
           clothes={clothes}
-          images={uploadedImages}
-          setImages={setImageList}
+         images={uploadedImages}
+          //setImages={setImageList}
+           setImages={setUploadedImages}
           taggedProductsByImage={taggedProductsByImage}     // ✅
           setTaggedProductsByImage={setTaggedProductsByImage}
           hashtags={hashtags}                               // ✅

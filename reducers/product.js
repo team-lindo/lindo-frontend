@@ -11,7 +11,7 @@ import { TbShoe, TbBrandRedhat } from "react-icons/tb";
 import { BsHandbag } from "react-icons/bs";
 import shortId from 'shortid';
 import axiosInstance from '../api/axiosInstance'; 
-
+import { fakeApi } from '../reducers/user';
 export const categories = [
   { name: "ALL", label: "전체", icon: BiCloset },
   { name: "outer", label: "아우터", icon: GiLabCoat },
@@ -87,17 +87,17 @@ const initialState = {
   tagsByImage: {},               // 이미지별 태그 정보 전역화
   loading: false,
   error: null,
-  //initialClothes,
- initialClothes: {
-    outer: [],
-    top: [],
-    bottom: [],
-    dress: [],
-    shoes: [],
-    bag: [],
-    hat: [],
-    accessory: [],
-  },
+  initialClothes,
+//  initialClothes: {
+//     outer: [],
+//     top: [],
+//     bottom: [],
+//     dress: [],
+//     shoes: [],
+//     bag: [],
+//     hat: [],
+//     accessory: [],
+//   },
   closetItemsByCategory: {}, // category별 분류
   allClosetItems: [],        // 전체 배열
   fetchClosetLoading: false,
@@ -216,12 +216,12 @@ const productSlice = createSlice({
   initialState,
   reducers: {
     updateProduct: (draft, action) => {
-      const { productName, brand, price, size, siteUrl, images } = action.payload;
+      const { productName, brand, price, images } = action.payload;
       const updatedImages = images?.map((img) => ({
         src: img.src || img,
         fetchPriority: "auto",
-        productInfo: productName ? `${brand} - ${productName} / ${price}원 / ${size}` : "",
-        siteUrl: siteUrl || ""
+        productInfo: productName ? `${brand} - ${productName} / ${price}원 ` : "",
+      
       })) || [];
 
       draft.product = {
@@ -243,7 +243,8 @@ const productSlice = createSlice({
       draft.loading = false;
       draft.error = null;
     },
-
+  setClosetItems(draft, action) {
+      draft.closetItems = action.payload;
   },
 
   extraReducers: (builder) => {
@@ -351,7 +352,7 @@ const productSlice = createSlice({
           draft.fetchClosetError = action.payload;
         });
         
-
+      }
   },
   })
 
@@ -359,6 +360,7 @@ const productSlice = createSlice({
 export const {
   setTagsByImage,
   resetProductState,
+  setClosetItems,
 } = productSlice.actions;
 
 export default productSlice.reducer;

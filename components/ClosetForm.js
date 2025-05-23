@@ -1,29 +1,31 @@
 import { useState } from "react";
 import Image from "next/image";
-import { Button, Row, Col, Modal } from "antd";
+import { Button, Row, Col, Modal, Typography } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import Router from "next/router";
-import {categories,initialClothes,deleteProduct} from "../reducers/product"
+import { useDispatch } from "react-redux";
+import { categories, initialClothes, deleteProduct } from "../reducers/product";
+
+const { Title, Paragraph } = Typography;
 
 const ClosetForm = ({ clothesData = initialClothes, showUploadButton = true, isOwner }) => {
+  const dispatch = useDispatch();
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewImage, setPreviewImage] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isOpen, setIsOpen] = useState(false); // 닫힌 옷장 상태 제어
 
-  // const handlePreview = (url) => {
-  //   setPreviewImage(url);
-  //   setPreviewOpen(true);
-  // };
   const handlePreview = (product) => {
-    setSelectedProduct(product); // 전체 product 객체 저장
+    setSelectedProduct(product);
     setPreviewOpen(true);
   };
+
   const handleDelete = async (productId) => {
     if (confirm("정말 삭제하시겠습니까?")) {
       await dispatch(deleteProduct(productId));
     }
   };
+
   const handleScrollToCategory = (categoryName) => {
     setSelectedCategory(categoryName);
     const target = document.getElementById(categoryName);
@@ -33,115 +35,137 @@ const ClosetForm = ({ clothesData = initialClothes, showUploadButton = true, isO
   };
 
   const filteredCategories =
-    selectedCategory === "ALL"
-      ? Object.keys(clothesData)
-      : [selectedCategory];
+    selectedCategory === "ALL" ? Object.keys(clothesData) : [selectedCategory];
 
   const isClosetEmpty = filteredCategories.every(
     (category) => clothesData[category]?.length === 0
   );
 
   return (
-    <div className="closet-container">
-      <div className="category-bar">
-        {categories.map(({ name, icon: Icon }) => (
-          <Button
-            key={name}
-            className={`category-button ${selectedCategory === name ? "active" : ""}`}
-            onClick={() => handleScrollToCategory(name)}
-          >
-            <Icon size={24} />
-            <span>{name}</span>
-          </Button>
-        ))}
-      </div>
+    <div className="closet-wrapper">
+      {!isOpen ? (
+        <div className="closed-closet" onClick={() => setIsOpen(true)}>
+          <Image
+            src="/images/closet-closed.png"
+            alt="닫힌 옷장"
+            width={300}
+            height={400}
+            style={{ cursor: "pointer" }}
+          />
+        </div>
+      ) : (
+        <div className="closet-container">
+          <div className="category-bar">
+            {categories.map(({ name, icon: Icon }) => (
+              <Button
+                key={name}
+                className={`category-button ${selectedCategory === name ? "active" : ""}`}
+                onClick={() => handleScrollToCategory(name)}
+              >
+                <Icon size={24} />
+                <span>{name}</span>
+              </Button>
+            ))}
+          </div>
 
-      {isOwner && showUploadButton && (
-        <div style={{ textAlign: "center", marginTop: "20px" }}>
-          <Button
-            type="primary"
-            icon={<UploadOutlined />}
-            size="large"
-            onClick={() => Router.push("/upload")}
-            style={{ width: "200px" }}
-          >
-            상품 업로드하기
-          </Button>
+          {isOwner && showUploadButton && (
+            <div style={{ textAlign: "center", marginTop: "20px" }}>
+              <Button
+                type="primary"
+                icon={<UploadOutlined />}
+                size="large"
+                onClick={() => Router.push("/upload")}
+                style={{ width: "200px" }}
+              >
+                상품 업로드하기
+              </Button>
+            </div>
+          )}
+
+          {isClosetEmpty ? (
+            <div className="empty-message">현재 옷장에 등록된 옷이 없습니다.</div>
+          ) : (
+            <Row gutter={[24, 24]}>
+              {filteredCategories.map((category) => (
+                <Col key={category} xs={24} sm={12}>
+                  <div className="category-section" id={category}>
+                    <div className="category-title">{category.toUpperCase()}</div>
+                    <div className="grid-wrapper">
+                      <Row gutter={[8, 8]}>
+                        {clothesData[category]?.slice(0, 4).map((item) => (
+                          <Col key={item.uid} span={12}>
+                            <div className="image-box" onClick={() => handlePreview(item)}>
+                              <Image
+                                src={item.thumbnail}
+                                alt={item.name || category}
+                                fill
+                                style={{ objectFit: "cover" }}
+                              />
+                            </div>
+                          </Col>
+                        ))}
+                        {Array.from({
+                          length: 4 - (clothesData[category]?.slice(0, 4).length || 0),
+                        }).map((_, idx) => (
+                          <Col key={`empty-${idx}`} span={12}>
+                            <div className="empty-box" />
+                          </Col>
+                        ))}
+                      </Row>
+                    </div>
+                  </div>
+                </Col>
+              ))}
+            </Row>
+          )}
+
+          <Modal open={previewOpen} footer={null} onCancel={() => setPreviewOpen(false)} centered>
+            {selectedProduct && (
+              <div style={{ textAlign: "center" }}>
+                <Image
+                  src={selectedProduct.url}
+                  alt="Preview"
+                  width={300}
+                  height={300}
+                  style={{ objectFit: "cover", marginBottom: 20 }}
+                />
+                <Title level={4}>{selectedProduct.name}</Title>
+                <Paragraph>브랜드: {selectedProduct.brand}</Paragraph>
+                <Paragraph>가격: ₩{selectedProduct.price?.toLocaleString()}</Paragraph>
+                <Button
+                  type="link"
+                  onClick={() => {
+                    setPreviewOpen(false);
+                    Router.push(`/product/${selectedProduct.uid}`);
+                  }}
+                >
+                  상세 페이지 보기
+                </Button>
+                {isOwner && (
+                  <Button danger size="small" onClick={() => handleDelete(selectedProduct.uid)}>
+                    삭제
+                  </Button>
+                )}
+              </div>
+            )}
+          </Modal>
         </div>
       )}
-      {isOwner && (
-        <Button danger size="small" onClick={() => handleDelete(item.uid)}>
-          삭제
-        </Button>
-      )}
-
-      {isClosetEmpty ? (
-        <div className="empty-message">현재 옷장에 등록된 옷이 없습니다.</div>
-      ) : (
-        <Row gutter={[24, 24]}>
-          {filteredCategories.map((category) => (
-            <Col key={category} xs={24} sm={12}>
-              <div className="category-section" id={category}>
-                <div className="category-title">{category.toUpperCase()}</div>
-                <div className="grid-wrapper">
-                  <Row gutter={[8, 8]}>
-                    {clothesData[category]?.slice(0, 4).map((item) => (
-                      <Col key={item.uid} span={12}>
-                      <div className="image-box" onClick={() => handlePreview(item)}>
-                        <Image
-                        src={item.thumbnail}  // ✅ 여기 수정
-                        alt={item.name || category} 
-                          //width={200}
-                          //height={300}
-                          fill
-                          style={{ objectFit: "cover" }}
-                        />
-                      </div>
-                      </Col>
-                    ))}
-                    {Array.from({
-                      length: 4 - (clothesData[category]?.slice(0, 4).length || 0),
-                    }).map((_, idx) => (
-                      <Col key={`empty-${idx}`} span={12}>
-                        <div className="empty-box" />
-                      </Col>
-                    ))}
-                  </Row>
-                </div>
-              </div>
-            </Col>
-          ))}
-        </Row>
-      )}
-<Modal open={previewOpen} footer={null} onCancel={() => setPreviewOpen(false)} centered>
-  {selectedProduct && (
-    <div style={{ textAlign: 'center' }}>
-      <Image
-        src={selectedProduct.url}
-        alt="Preview"
-        width={300}
-        height={300}
-        style={{ objectFit: "cover", marginBottom: 20 }}
-      />
-      <Title level={4}>{selectedProduct.name}</Title>
-      <Paragraph>브랜드: {selectedProduct.brand}</Paragraph>
-      <Paragraph>가격: ₩{selectedProduct.price?.toLocaleString()}</Paragraph>
-      <Button type="link" onClick={() => {
-        setPreviewOpen(false);
-        Router.push(`/product/${selectedProduct.uid}`);
-      }}>
-        상세 페이지 보기
-      </Button>
-    </div>
-  )}
-</Modal>
-
 
       <style jsx>{`
-        .grid-wrapper {
-          max-width: 260px;
-          margin: 0 auto;
+        .closet-wrapper {
+          text-align: center;
+          padding: 40px;
         }
+        .closed-closet {
+          display: inline-block;
+          cursor: pointer;
+          transition: transform 0.3s ease;
+        }
+        .closed-closet:hover {
+          transform: scale(1.02);
+        }
+        /* 아래 스타일은 기존 closet-container와 동일 */
         .closet-container {
           padding: 20px;
           max-width: 1000px;
@@ -212,8 +236,7 @@ const ClosetForm = ({ clothesData = initialClothes, showUploadButton = true, isO
           border: 2px dashed #ccc;
           border-radius: 10px;
         }
-        .empty-message,
-        .empty-category-message {
+        .empty-message {
           text-align: center;
           color: #555;
           padding: 20px;

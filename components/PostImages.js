@@ -40,7 +40,7 @@ const PostImages = ({ images = [], taggedProductsByImage = {} }) => {
 
   console.log('tag.name:', tag.name);
   console.log('tag.price:', tag.price);
-  console.log('tag.size:', tag.size);
+
   console.log('🧷 tag 전체:', tag);
 
   return (

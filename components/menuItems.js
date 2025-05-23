@@ -50,10 +50,10 @@ export const getCombinedMenuItems = (pathname) => {
 
   return [
     {
-      key: "logo",
+      key: "LINDO",
       label: (
         <Link href="/" style={{ fontWeight: "bold", fontSize: "20px" }}>
-          로고
+          LINDO
         </Link>
       ),
     },
