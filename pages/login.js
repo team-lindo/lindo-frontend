@@ -29,11 +29,12 @@ function Login() {
   const [email, onChangeEmail] = useInput("");
   const [password, onChangePassword] = useInput("");
 
-  useEffect(() => {
-    if (logInError) {
-      message.error(logInError);
-    }
-  }, [logInError]);
+useEffect(() => {
+  if (logInError) {
+    message.error(logInError.message || "로그인에 실패했습니다."); // ✅ 이렇게 수정
+  }
+}, [logInError]);
+
 
   useEffect(() => {
     if (me) {
@@ -76,66 +77,72 @@ function Login() {
             </Title>
             <Divider />
 
-            <Form
-              onFinish={onSubmitForm}
-              layout="vertical"
-              style={{ marginTop: 20 }}
-            >
-              <Form.Item
-                label={<Text strong>이메일</Text>}
-                name="email"
-                rules={[{ required: true, message: "이메일을 입력하세요!" }]}
-              >
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={onChangeEmail}
-                  placeholder="example@example.com"
-                  size="large"
-                />
-              </Form.Item>
+<Form
+  onFinish={(values) => {
+    dispatch(logIn(values)) // ✅ values: { email: "...", password: "..." }
+      .unwrap()
+      .then((user) => {
+        localStorage.setItem("me", JSON.stringify(user));
+      })
+      .catch((err) => {
+        message.error("로그인 실패: " + err.message);
+      });
+  }}
+  layout="vertical"
+  style={{ marginTop: 20 }}
+>
+  <Form.Item
+    label={<Text strong>이메일</Text>}
+    name="email"
+    rules={[{ required: true, message: "이메일을 입력하세요!" }]}
+  >
+    <Input
+      type="email"
+      placeholder="example@example.com"
+      size="large"
+    />
+  </Form.Item>
 
-              <Form.Item
-                label={<Text strong>비밀번호</Text>}
-                name="password"
-                rules={[{ required: true, message: "비밀번호를 입력하세요!" }]}
-              >
-                <Input.Password
-                  value={password}
-                  onChange={onChangePassword}
-                  placeholder="비밀번호 입력"
-                  size="large"
-                />
-              </Form.Item>
+  <Form.Item
+    label={<Text strong>비밀번호</Text>}
+    name="password"
+    rules={[{ required: true, message: "비밀번호를 입력하세요!" }]}
+  >
+    <Input.Password
+      placeholder="비밀번호 입력"
+      size="large"
+    />
+  </Form.Item>
 
-              <Form.Item>
-                <Row gutter={16} justify="center">
-                  <Col span={12}>
-                    <Button
-                      type="primary"
-                      htmlType="submit"
-                      loading={logInLoading}
-                      block
-                      size="large"
-                    >
-                      로그인
-                    </Button>
-                  </Col>
-                  <Col span={12}>
-                    <Link href="/signup" passHref legacyBehavior>
-                      <Button
-                        type="default"
-                        block
-                        size="large"
-                        style={{ borderColor: "#1890ff", color: "#1890ff" }}
-                      >
-                        회원가입
-                      </Button>
-                    </Link>
-                  </Col>
-                </Row>
-              </Form.Item>
-            </Form>
+  <Form.Item>
+    <Row gutter={16} justify="center">
+      <Col span={12}>
+        <Button
+          type="primary"
+          htmlType="submit"
+          loading={logInLoading}
+          block
+          size="large"
+        >
+          로그인
+        </Button>
+      </Col>
+      <Col span={12}>
+        <Link href="/signup" passHref legacyBehavior>
+          <Button
+            type="default"
+            block
+            size="large"
+            style={{ borderColor: "#1890ff", color: "#1890ff" }}
+          >
+            회원가입
+          </Button>
+        </Link>
+      </Col>
+    </Row>
+  </Form.Item>
+</Form>
+
           </Card>
         </Col>
       </Row>

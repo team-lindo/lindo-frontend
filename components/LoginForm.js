@@ -16,11 +16,12 @@ const LoginForm = () => {
   // const [email, onChangeEmail] = useInput('');
   // const [password, onChangePassword] = useInput('');
 
-  useEffect(() => {
-    if (logInError) {
-      alert(logInError);
-    }
-  }, [logInError]);
+useEffect(() => {
+  if (logInError) {
+    message.error(logInError.message || "로그인에 실패했습니다."); // ✅ 이렇게 수정
+  }
+}, [logInError]);
+
 
   // Yup 스키마를 useMemo로 메모이제이션
   const validationSchema = useMemo(

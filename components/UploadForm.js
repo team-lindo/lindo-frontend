@@ -1,14 +1,13 @@
-import { useDispatch } from "react-redux";
+import { useDispatch,useSelector } from "react-redux";
 import { Form, Input, Button, Select, Typography, Upload, Row, Col, Tag, Tooltip, Card, message } from "antd";
 import ImgCrop from "antd-img-crop";
 import PropTypes from "prop-types";
 import { useState } from "react";
 import { categories,addProduct } from "../reducers/product";
-
 import shortId from "shortid";
 import { useRouter } from "next/router";
 import { UploadOutlined } from "@ant-design/icons";
-
+import { useEffect } from "react";
 const { Title } = Typography;
 const { Option } = Select;
 
@@ -18,48 +17,49 @@ const UploadForm = ({ me }) => {
   const [fileList, setFileList] = useState([]);
   const [productTags, setProductTags] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(""); 
+ const addProductError = useSelector((state) => state.product.addProductError);
+const handleSubmit = async (values) => {
+  console.log(" 1. handleSubmit 진입");
 
-  const handleSubmit = async (values) => {
-    const id = shortId.generate();
+  const productRequest = {
+    productName: values.productName,
+    category: values.category,
+    brand: values.brand,
+  };
 
-    const user = {
-      id: me?.id ?? 1,
-      nickname: me?.nickname ?? "익명",
-    };
+  console.log(" 요청 데이터 (AddProductRequestDTO):", productRequest);
 
-    const product = {
-      productName: values.productName,
-      category: values.category,
-      brand: values.brand,
-    };
+  // 이미지 태그 처리 
+  const imagesWithTags = fileList.map((file) => ({
+    src: file.url || file.response?.url,
+    fetchPriority: "auto",
+    productInfo: `${productRequest.brand} - ${productRequest.productName}`,
+  }));
+  setProductTags(imagesWithTags);
 
-    const imagesWithTags = fileList.map((file) => ({
-      src: file.url || file.response?.url,
-      fetchPriority: "auto",
-      productInfo:
-        product.productName && product.category === selectedCategory
-          ? `${product.brand} - ${product.productName} / ${product.price}원 `
-          : "",
-    }));
+  // 상품 등록 요청
+  const result = await dispatch(addProduct(productRequest)); 
 
-    setProductTags(imagesWithTags);
+  console.log(" 서버 응답 (ProductDTO):", result);
 
-    const post = {
-      id,
-      user,
-      images: imagesWithTags,
-      products: [product],
-    };
-
-    const result = await dispatch(addProduct(product));
-
-    if (result.meta.requestStatus === "fulfilled") {
-      message.success("상품이 옷장에 등록되었습니다!");
-      router.push("/closet"); // 옷장 페이지로 이동
-    } else {
-      message.error("상품 등록 중 오류가 발생했습니다.");
-    }
+  if (result.meta.requestStatus === "fulfilled") {
+    const productResponse = result.payload; //  ProductDTO로 응답
+    message.success(`상품이 등록되었습니다! 상품번호: ${productResponse.uid}`);
+    router.push("/closet");
+  } else {
+    message.error("상품 등록 중 오류가 발생했습니다.");
   }
+};
+
+    useEffect(() => {
+    if (addProductError) {
+      message.error(
+        typeof addProductError === "string"
+          ? addProductError
+          : addProductError.message || "상품 등록 중 오류 발생"
+      );
+    }
+  }, [addProductError]);
   const onChange = ({ fileList: newFileList }) => {
     setFileList(newFileList);
   };
@@ -83,7 +83,7 @@ const UploadForm = ({ me }) => {
           <Title level={2} style={{ textAlign: "center" }}>상품 업로드</Title>
           
           <Form layout="vertical" onFinish={handleSubmit}>
-            {/* 이미지 업로드 */}
+            {/* 이미지 업로드
             <Form.Item label="이미지 업로드">
               <ImgCrop rotationSlider>
                 <Upload.Dragger
@@ -101,7 +101,7 @@ const UploadForm = ({ me }) => {
                   <p className="ant-upload-text">이미지를 업로드하려면 클릭하거나 드래그하세요.</p>
                 </Upload.Dragger>
               </ImgCrop>
-            </Form.Item>
+            </Form.Item> */}
 
             {/* 등록된 제품 태그 */}
             {productTags.length > 0 && (
@@ -138,11 +138,11 @@ const UploadForm = ({ me }) => {
             <Form.Item label="제품명" name="productName" rules={[{ required: true }]}>
               <Input placeholder="제품명을 입력하세요" />
             </Form.Item>
-
-            {/* 가격 */}
+{/* 
+            {/* 가격 
             <Form.Item label="가격" name="price" rules={[{ required: true }]}>
               <Input type="number" placeholder="가격을 입력하세요" />
-            </Form.Item>
+            </Form.Item> */}
 
             {/* 등록 버튼 */}
             <Form.Item>

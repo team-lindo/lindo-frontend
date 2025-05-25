@@ -24,85 +24,87 @@ export const categories = [
   { name: "accessory", label: "액세서리", icon: PiEyeglassesThin },
 ];
 
-export const initialClothes = {
-  outer: [
-    { uid:"a1", url: "/images/coat1.jpg", name: "봄 코트",
-      price: 89000,
-   },
-    { uid: "a2", url: "/images/coat2.jpg", name: " 코트",
-      price: 97000,
-     },
-    { uid: "a3", url: "/images/jacket1.jpg",
-      name: "자켓",
-      price: 189000,
-     },
-    { uid:"a4", url: "/images/jacket2.jpg",  name: "여름 자켓",
-      price: 289000,
-   },
-  ],
-  top: [
-    { uid: shortId.generate(), url: "/images/sweater1.jpg" },
-    { uid: shortId.generate(), url: "/images/sweater2.jpg" },
-    { uid: shortId.generate(), url: "/images/knit1.jpg" },
-    { uid: shortId.generate(), url: "/images/knit2.jpg" },
-  ],
-  bottom: [
-    { uid: shortId.generate(), url: "/images/jeans1.jpg" },
-    { uid: shortId.generate(), url: "/images/jeans2.jpg" },
-  ],
-  dress: [{ uid: shortId.generate(), url: "/images/dress1.jpg" }],
-  shoes: [{ uid: shortId.generate(), url: "/images/shoes1.jpg" }],
-  bag: [{ uid: shortId.generate(), url: "/images/bag1.jpg" }],
-  hat: [{ uid: shortId.generate(), url: "/images/hat1.jpg" }],
-  accessory: [],
-};
-const uid = shortId.generate(); // 상품 uid
+// export const initialClothes = {
+//   outer: [
+//     { uid:"a1", url: "/images/coat1.jpg", name: "봄 코트",
+//       price: 89000,
+//    },
+//     { uid: "a2", url: "/images/coat2.jpg", name: " 코트",
+//       price: 97000,
+//      },
+//     { uid: "a3", url: "/images/jacket1.jpg",
+//       name: "자켓",
+//       price: 189000,
+//      },
+//     { uid:"a4", url: "/images/jacket2.jpg",  name: "여름 자켓",
+//       price: 289000,
+//    },
+//   ],
+//   top: [
+//     { uid: shortId.generate(), url: "/images/sweater1.jpg" },
+//     { uid: shortId.generate(), url: "/images/sweater2.jpg" },
+//     { uid: shortId.generate(), url: "/images/knit1.jpg" },
+//     { uid: shortId.generate(), url: "/images/knit2.jpg" },
+//   ],
+//   bottom: [
+//     { uid: shortId.generate(), url: "/images/jeans1.jpg" },
+//     { uid: shortId.generate(), url: "/images/jeans2.jpg" },
+//   ],
+//   dress: [{ uid: shortId.generate(), url: "/images/dress1.jpg" }],
+//   shoes: [{ uid: shortId.generate(), url: "/images/shoes1.jpg" }],
+//   bag: [{ uid: shortId.generate(), url: "/images/bag1.jpg" }],
+//   hat: [{ uid: shortId.generate(), url: "/images/hat1.jpg" }],
+//   accessory: [],
+// };
+// const uid = shortId.generate(); // 상품 uid
 
-// 기본 더미 제품 데이터
-const dummyProduct = {
-  uid,
-  id: shortId.generate(),
-  category: "outer",
-  brand: "Nike",
-  productName: "Winter Jacket",
-  price: 129000,
-  description: "A warm and stylish winter jacket.",
-  images: [
-    {
-      src: "https://via.placeholder.com/150",
-      fetchPriority: "auto",
-      productInfo: "Nike - Winter Jacket / 129000원 / L",
-      siteUrl: "https://nike.com"
-    }
-  ]
-};
+// // 기본 더미 제품 데이터
+// const dummyProduct = {
+//   uid,
+//   id: shortId.generate(),
+//   category: "outer",
+//   brand: "Nike",
+//   productName: "Winter Jacket",
+//   price: 129000,
+//   description: "A warm and stylish winter jacket.",
+//   images: [
+//     {
+//       src: "https://via.placeholder.com/150",
+//       fetchPriority: "auto",
+//       productInfo: "Nike - Winter Jacket / 129000원 / L",
+//       siteUrl: "https://nike.com"
+//     }
+//   ]
+// };
 
 
 // 초기 상태 정의
 const initialState = {
-  product: dummyProduct,         // 현재 단일 제품
-  // product: null,
+  //product: dummyProduct,         // 현재 단일 제품
+  product: null,
   products: [],                  // 복수 제품 저장용
   closetItems: [],            // ✅ 내 옷장 아이템
   tagsByImage: {},               // 이미지별 태그 정보 전역화
   loading: false,
   error: null,
-  initialClothes,
-//  initialClothes: {
-//     outer: [],
-//     top: [],
-//     bottom: [],
-//     dress: [],
-//     shoes: [],
-//     bag: [],
-//     hat: [],
-//     accessory: [],
-//   },
+ // initialClothes,
+ initialClothes: {
+    outer: [],
+    top: [],
+    bottom: [],
+    dress: [],
+    shoes: [],
+    bag: [],
+    hat: [],
+    accessory: [],
+  },
   closetItemsByCategory: {}, // category별 분류
   allClosetItems: [],        // 전체 배열
   fetchClosetLoading: false,
   fetchClosetError: null,
-  
+    addProductLoading: false,
+  addProductDone: false,
+  addProductError: null,
 };
 
 
@@ -134,30 +136,34 @@ export const addProduct = createAsyncThunk(
   'product/addProduct',
   async (product, thunkAPI) => {
     try {
-      const newProduct = {
-        ...product,
-        uid: product.uid || shortId.generate(), // 더미 uid 생성
-        imageUrl: product.imageUrl || '/images/default.png',
-      };
-      return newProduct; // 서버 대신 즉시 반환
+      console.log(" accessToken:", localStorage.getItem("accessToken"));
+
+      console.log(" 서버로 보낼 상품 데이터:", product); // 전송 직전 로그
+      const response = await axiosInstance.post('/closet/me/product', product);
+      console.log(" 서버 응답:", response.data); // 응답 확인 로그
+      return response.data;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
-    }
+  console.error(" 요청 실패!", error);
+  console.error(" 서버 응답:", error.response?.data); 
+  console.error(" 응답 body:", error.response?.data);
+  return thunkAPI.rejectWithValue(error.response?.data || error.message);
+}
+
   }
 );
+
 
 export const deleteProduct = createAsyncThunk(
   'product/deleteProduct',
-  async (deletedId, thunkAPI) => {
+  async (productId, thunkAPI) => {
     try {
-      // fakeApi라 실제 삭제는 안하지만 deletedId만 반환
-      return deletedId;
+     const response = await axiosInstance.delete(`/closet/me/product/${productId}`);
+      return response.data.deletedId; // ✅ deletedId만 반환
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
     }
   }
 );
-
 
 // export const updateProduct = createAsyncThunk(
 //   'product/updateProduct',
@@ -178,10 +184,10 @@ export const getProductById = createAsyncThunk(
   'product/getProductById',
   async (uid, thunkAPI) => {
     try {
-      const response = await fakeApi.getProductById(uid);
+      const response = await axiosInstance.get(`closet/me/product/${productId}`);
       return response.data;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
     }
   }
 );
@@ -198,19 +204,18 @@ export const getProductById = createAsyncThunk(
 //     }
 //   }
 // );
+
 export const fetchClosetData = createAsyncThunk(
   'product/fetchClosetData',
   async (_, thunkAPI) => {
     try {
-      const response = await fakeApi.me();
-      return response.data.closetItems || [];
+      const response = await axiosInstance.get('/closet/me');
+      return response.data.closetItems; // 서버 응답
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
     }
   }
 );
-
-
 const productSlice = createSlice({
   name: 'product',
   initialState,
@@ -271,20 +276,35 @@ const productSlice = createSlice({
       //   draft.loading = false;
       //   draft.error = 'Failed to fetch product';
       // })
-      .addCase(addProduct.fulfilled, (draft, action) => {
-        const product = action.payload;
-        const category = product.category;
-      
-        if (!draft.closetItemsByCategory[category]) {
-          draft.closetItemsByCategory[category] = [];
-        }
-        draft.closetItemsByCategory[category].push(product);
-      
-        draft.allClosetItems.push(product); // 전체 보기용
+      .addCase(addProduct.pending, (draft, action) => {
+        draft.addProductLoading = true;
+        draft.addProductDone = false;
+        draft.addProductError = null;
       })
-      
+
+.addCase(addProduct.fulfilled, (draft, action) => {
+  draft.addProductLoading = false;
+        draft.addProductDone = true;
+  const product = action.payload;
+  if (!product || !product.category) return;
+
+  const category = product.category;
+
+  if (!draft.closetItemsByCategory[category]) {
+    draft.closetItemsByCategory[category] = [];
+  }
+
+  draft.closetItemsByCategory[category].push(product);
+  draft.allClosetItems.push(product);
+  console.log("payload:", action.payload)
+   console.log("✅ 등록된 product:", product);
+})
+
       .addCase(addProduct.rejected, (draft,action) => {
-        draft.error = action.payload;
+         draft.addProductLoading = false;
+          console.error("❌ addProduct 실패!", action.payload);
+ draft.addProductError = action.payload || action.error.message;
+ 
       })
       .addCase(deleteProduct.fulfilled, (draft, action) => {
         const id = action.payload;

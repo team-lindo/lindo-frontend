@@ -35,11 +35,14 @@ const ClosetForm = ({ clothesData = initialClothes, showUploadButton = true, isO
   };
 
   const filteredCategories =
-    selectedCategory === "ALL" ? Object.keys(clothesData) : [selectedCategory];
+  selectedCategory === "ALL" && clothesData
+    ? Object.keys(clothesData)
+    : [selectedCategory];
 
-  const isClosetEmpty = filteredCategories.every(
-    (category) => clothesData[category]?.length === 0
-  );
+const isClosetEmpty = filteredCategories.every((category) =>
+  Array.isArray(clothesData?.[category]) && clothesData[category].length === 0
+);
+
 
   return (
     <div className="closet-wrapper">
@@ -86,36 +89,40 @@ const ClosetForm = ({ clothesData = initialClothes, showUploadButton = true, isO
             <div className="empty-message">현재 옷장에 등록된 옷이 없습니다.</div>
           ) : (
             <Row gutter={[24, 24]}>
-              {filteredCategories.map((category) => (
-                <Col key={category} xs={24} sm={12}>
-                  <div className="category-section" id={category}>
-                    <div className="category-title">{category.toUpperCase()}</div>
-                    <div className="grid-wrapper">
-                      <Row gutter={[8, 8]}>
-                        {clothesData[category]?.slice(0, 4).map((item) => (
-                          <Col key={item.uid} span={12}>
-                            <div className="image-box" onClick={() => handlePreview(item)}>
-                              <Image
-                                src={item.thumbnail}
-                                alt={item.name || category}
-                                fill
-                                style={{ objectFit: "cover" }}
-                              />
-                            </div>
-                          </Col>
-                        ))}
-                        {Array.from({
-                          length: 4 - (clothesData[category]?.slice(0, 4).length || 0),
-                        }).map((_, idx) => (
-                          <Col key={`empty-${idx}`} span={12}>
-                            <div className="empty-box" />
-                          </Col>
-                        ))}
-                      </Row>
-                    </div>
-                  </div>
-                </Col>
-              ))}
+{filteredCategories.map((category) => {
+  const items = clothesData?.[category] || []; // ❗ 안전한 배열로 fallback
+
+  return (
+    <Col key={category} xs={24} sm={12}>
+      <div className="category-section" id={category}>
+        <div className="category-title">{category.toUpperCase()}</div>
+        <div className="grid-wrapper">
+          <Row gutter={[8, 8]}>
+            {items.slice(0, 4).map((item) => (
+              <Col key={item.uid} span={12}>
+                <div className="image-box" onClick={() => handlePreview(item)}>
+                  <Image
+                    src={item.thumbnail || item.url} // fallback
+                    alt={item.name || category}
+                    fill
+                    style={{ objectFit: "cover" }}
+                  />
+                </div>
+              </Col>
+            ))}
+
+            {Array.from({ length: 4 - items.slice(0, 4).length }).map((_, idx) => (
+              <Col key={`empty-${idx}`} span={12}>
+                <div className="empty-box" />
+              </Col>
+            ))}
+          </Row>
+        </div>
+      </div>
+    </Col>
+  );
+})}
+
             </Row>
           )}
 
