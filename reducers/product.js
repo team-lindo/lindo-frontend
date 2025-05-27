@@ -184,13 +184,18 @@ export const getProductById = createAsyncThunk(
   'product/getProductById',
   async (uid, thunkAPI) => {
     try {
-      const response = await axiosInstance.get(`closet/me/product/${productId}`);
+      console.log('🔍 [getProductById] 요청 uid:', uid); // ✅ uid 확인
+      const response = await axiosInstance.get(`closet/me/product/${uid}`);
+      console.log('✅ [getProductById] 응답 데이터:', response.data); // ✅ 서버 응답 확인
       return response.data;
     } catch (error) {
+      console.error('❌ [getProductById] 에러:', error.response?.data || error.message); // ✅ 에러 확인
       return thunkAPI.rejectWithValue(error.response?.data || error.message);
     }
   }
 );
+
+
 
 //로그인한 유저의 옷장 아이템 리스트
 // export const fetchMyCloset = createAsyncThunk(
@@ -220,6 +225,11 @@ const productSlice = createSlice({
   name: 'product',
   initialState,
   reducers: {
+    setInitialClothes: (draft, action) => {
+       console.log("🔥 setInitialClothes reducer 호출됨");
+  draft.initialClothes = action.payload;
+},
+
     updateProduct: (draft, action) => {
       const { productName, brand, price, images } = action.payload;
       const updatedImages = images?.map((img) => ({
@@ -236,7 +246,6 @@ const productSlice = createSlice({
       };
     },
 
-
     setTagsByImage: (draft, action) => {
       draft.tagsByImage = action.payload;
     },
@@ -248,10 +257,10 @@ const productSlice = createSlice({
       draft.loading = false;
       draft.error = null;
     },
-  setClosetItems(draft, action) {
-      draft.closetItems = action.payload;
+  // setClosetItems(draft, action) {
+  //     draft.closetItems = action.payload;
+  // },
   },
-
   extraReducers: (builder) => {
     builder
       // .addCase(fetchProduct.pending, (draft) => {
@@ -327,9 +336,11 @@ const productSlice = createSlice({
       //   draft.initialClothes[category] = draft.initialClothes[category].map((p) =>
       //     p.id === updated.id ? updated : p
       //   )
-        .addCase(getProductById.fulfilled, (draft, action) => {
-          draft.product = action.payload;
-        })
+.addCase(getProductById.fulfilled, (draft, action) => {
+  console.log('📦 [Redux] getProductById.fulfilled:', action.payload); // ✅ payload 확인
+  draft.product = action.payload;
+})
+
         // .addCase(fetchMyCloset.pending, (draft) => {
         //   draft.fetchClosetLoading = true;
         //   draft.fetchClosetError = null;
@@ -346,33 +357,35 @@ const productSlice = createSlice({
           draft.fetchClosetLoading = true;
           draft.fetchClosetError = null;
         })
-        .addCase(fetchClosetData.fulfilled, (draft, action) => {
-          draft.fetchClosetLoading = false;
-        
-          const items = action.payload;
-        
-          // ✅ 전체 아이템 저장 (옷장 페이지용)
-          draft.closetItems = items;
-        
-          // ✅ 카테고리별 분류 저장 (태깅용)
-          const categorized = Object.fromEntries(
-            Object.keys(draft.initialClothes).map((key) => [key, []])
-          );
-        
-          items.forEach((item) => {
-            if (categorized[item.category]) {
-              categorized[item.category].push(item);
-            }
-          });
-        
-          draft.initialClothes = categorized;
-        })
+   .addCase(fetchClosetData.fulfilled, (draft, action) => {
+      console.log("✅ fetchClosetData.fulfilled 실행됨!");
+        const items = action.payload;
+
+        // ✅ 전체 저장
+        draft.closetItems = items;
+
+        // ✅ 카테고리 분류
+        const categorized = Object.fromEntries(
+          Object.keys(draft.initialClothes).map((key) => [key, []])
+        );
+
+        items.forEach((item) => {
+          const categoryKey = item.category?.toLowerCase();
+          if (categorized[categoryKey]) {
+            categorized[categoryKey].push(item);
+          } else {
+            console.warn("⚠️ Unknown category:", item.category);
+          }
+        });
+ console.log("🧥 categorized:", categorized); // 확인
+        draft.initialClothes = categorized;
+      })
         .addCase(fetchClosetData.rejected, (draft, action) => {
           draft.fetchClosetLoading = false;
           draft.fetchClosetError = action.payload;
         });
         
-      }
+      
   },
   })
 
@@ -381,7 +394,7 @@ export const {
   setTagsByImage,
   resetProductState,
   setClosetItems,
+  setInitialClothes 
 } = productSlice.actions;
 
 export default productSlice.reducer;
-

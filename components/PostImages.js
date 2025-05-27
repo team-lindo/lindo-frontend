@@ -1,86 +1,79 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Popover } from 'antd';
 
 const PostImages = ({ images = [], taggedProductsByImage = {} }) => {
+  const containerRefs = useRef([]);
+
+  useEffect(() => {
+    console.log('📌 PostImages 렌더링됨');
+    console.log('📸 images:', images);
+    console.log('🏷️ taggedProductsByImage:', taggedProductsByImage);
+  }, [images, taggedProductsByImage]);
+
+  if (!images || images.length === 0) return null;
+
   return (
     <>
-      {images.map((image) => {
-        const containerRef = useRef(null);
+      {images.map((image, idx) => {
+        const tags = taggedProductsByImage?.[image.id] || [];
 
         return (
-          <div
-            key={image.id}
-            style={{
-              marginBottom: '16px',
-              width: 'fit-content',
-            }}
-          >
+          <div key={image.id} style={{ marginBottom: '16px', width: 'fit-content' }}>
             <div
-              ref={containerRef}
+              ref={(el) => (containerRefs.current[idx] = el)}
               style={{
                 position: 'relative',
                 display: 'inline-block',
-                overflow: 'visible', 
+                width: '600px',
+                height: '600px',
+                borderRadius: '12px',
+                overflow: 'hidden',
               }}
             >
               <img
                 src={image.src}
                 alt="게시 이미지"
                 style={{
-                  display: 'block',
-                  width: '600px',
-                  height: '600px',
+                  width: '100%',
+                  height: '100%',
                   objectFit: 'cover',
-                  borderRadius: '12px',
+                  display: 'block',
                 }}
               />
 
-{taggedProductsByImage?.[image.id]?.map((tag, idx) => {
-
-  console.log('tag.name:', tag.name);
-  console.log('tag.price:', tag.price);
-
-  console.log('🧷 tag 전체:', tag);
-
-  return (
-    <Link key={idx} href={`/product/${tag.uid}`} passHref>
-      <Popover
-        content={
-          <div>
-            <p style={{ margin: 0 }}>상품명: {tag.name}</p>
-            <p style={{ margin: '4px 0' }}>
-              ₩{tag.price?.toLocaleString()}
-            </p>
-          </div>
-        }
-        trigger="hover"
-        placement="top"
-        getPopupContainer={() => containerRef.current}
-      >
-        <a
-          style={{
-            position: 'absolute',
-            top: `${tag.y}%`,
-            left: `${tag.x}%`,
-            backgroundColor: 'white',
-            color: 'red',
-            padding: '4px 8px',
-            borderRadius: '8px',
-            fontSize: '12px',
-            cursor: 'pointer',
-            zIndex: 10,
-            whiteSpace: 'nowrap',
-            textDecoration: 'none',
-          }}
-        >
-          🔗
-        </a>
-      </Popover>
-    </Link>
-  );
-})}
-
+              {/* 태그 표시 */}
+              {tags.map((tag, tIdx) => (
+                <Link key={tIdx} href={`/product/${tag.uid}`} passHref>
+                  <Popover
+                    content={
+                      <div>
+                        <p style={{ margin: 0 }}>상품명: {tag.name}</p>
+                        <p>₩{tag.price?.toLocaleString()}</p>
+                      </div>
+                    }
+                    trigger="hover"
+                    getPopupContainer={() => containerRefs.current[idx]}
+                  >
+                    <a
+                      style={{
+                        position: 'absolute',
+                        top: `${tag.y}%`,
+                        left: `${tag.x}%`,
+                        backgroundColor: 'white',
+                        color: 'red',
+                        padding: '4px 6px',
+                        fontSize: '12px',
+                        borderRadius: '8px',
+                        textDecoration: 'none',
+                        zIndex: 10,
+                      }}
+                    >
+                      🔗
+                    </a>
+                  </Popover>
+                </Link>
+              ))}
             </div>
           </div>
         );

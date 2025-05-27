@@ -5,8 +5,8 @@ import InfiniteScroll from "react-infinite-scroll-component";
 import Link from "next/link";
 import { useDispatch } from 'react-redux';
 import { loadFollowers, follow, unfollow } from '../reducers/user'
-
-const FollowList = ({ header, data = [] , totalCount = 0}) => {
+//팔로워워
+const FollowList = ({ header, data , totalCount = 0}) => {
   //<FollowList header="팔로워" data={followersList} totalCount={followersCount} />
 
   const [followStatus, setFollowStatus] = useState(
@@ -32,18 +32,29 @@ const FollowList = ({ header, data = [] , totalCount = 0}) => {
 
   const [page, setPage] = useState(1);
   
-  const loadMoreData = () => {
-    if (loading) return;
-    setLoading(true);
-    dispatch( loadFollowers({ offset: loadedData.length }))     
-.then((res) => {
+const loadMoreData = () => {
+  if (loading) return;
+  setLoading(true);
+  dispatch(loadFollowers({ offset: loadedData.length }))
+    .then((res) => {
       if (res.payload) {
-        setLoadedData((prev) => [...prev, ...res.payload]);
-        setPage((prev) => prev + 1);
+        setLoadedData((prev) => {
+          const combined = [...prev, ...res.payload];
+          const uniqueMap = new Map();
+          combined.forEach(user => {
+            uniqueMap.set(user.id, user);
+          });
+          return Array.from(uniqueMap.values());
+        });
       }
+      setLoading(false); // ✅ 로딩 종료 위치도 여기로
+    })
+    .catch((err) => {
+      console.error("❌ 팔로워 불러오기 실패:", err);
       setLoading(false);
     });
-  };
+};
+
   
 
   const onFollowToggle = async (id) => {

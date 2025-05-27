@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import { StopOutlined } from "@ant-design/icons";
 import { useMemo, useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
-import { loadFollowings, follow, unfollow } from "../reducers/user";
+import { loadFollowings, follow, unfollow,loadMyInfo } from "../reducers/user";
 
 const FollowingList = ({ header, data = [], totalCount = 0 }) => {
   const dispatch = useDispatch();
@@ -29,33 +29,50 @@ const FollowingList = ({ header, data = [], totalCount = 0 }) => {
   }, [data]);
 
   // 팔로우/언팔로우 토글
-  const onFollowToggle = async (id) => {
-    const isCurrentlyFollowing = followStatus[id];
+const onFollowToggle = async (id) => {
+  const isCurrentlyFollowing = followStatus[id];
+  console.log("🧩 현재 팔로우 상태:", isCurrentlyFollowing); // ✅ 현재 상태
 
-    try {
-      if (isCurrentlyFollowing) {
-        await dispatch(unfollow(id)).unwrap();
-      } else {
-        await dispatch(follow(id)).unwrap();
-      }
+  try {
+    if (isCurrentlyFollowing) {
+      console.log("🔁 언팔로우 요청:", id);
+      await dispatch(unfollow(id)).unwrap();
+    } else {
+      console.log("🔁 팔로우 요청:", id);
+      await dispatch(follow(id)).unwrap();
 
-      setFollowStatus((prev) => ({
+      console.log("🔄 loadMyInfo()로 me 갱신 중...");
+      await dispatch(loadMyInfo()).unwrap();
+    }
+
+    setFollowStatus((prev) => {
+      const updated = {
         ...prev,
         [id]: !prev[id],
-      }));
-    } catch (error) {
-      console.error("팔로우 토글 실패:", error);
-    }
-  };
+      };
+      console.log("✅ 토글된 followStatus 상태:", updated); // ✅ 변경된 followStatus 출력
+      return updated;
+    });
+  } catch (error) {
+    console.error("❌ 팔로우 토글 실패:", error);
+  }
+};
+
 
   // 더 보기 버튼
-  const handleLoadMore = async () => {
-    if (loading || data.length >= totalCount) return;
-    setLoading(true);
-    await dispatch(loadFollowings({ offset }));
-    setOffset((prev) => prev + 10);
-    setLoading(false);
-  };
+const handleLoadMore = async () => {
+  if (loading || data.length >= totalCount) return;
+  setLoading(true);
+  try {
+    const res = await dispatch(loadFollowings({ offset })).unwrap();
+    const newUsers = res.users || [];
+    setOffset((prev) => prev + newUsers.length);
+  } catch (e) {
+    console.error("🚨 loadFollowings 실패:", e);
+  }
+  setLoading(false);
+};
+
 
   const styles = useMemo(
     () => ({

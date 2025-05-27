@@ -1,24 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Button, Row, Col, Modal, Typography } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import Router from "next/router";
-import { useDispatch } from "react-redux";
-import { categories, initialClothes, deleteProduct } from "../reducers/product";
+import { useDispatch,useSelector } from "react-redux";
+import { categories ,deleteProduct } from "../reducers/product";
 
 const { Title, Paragraph } = Typography;
 
-const ClosetForm = ({ clothesData = initialClothes, showUploadButton = true, isOwner }) => {
+const ClosetForm = ({  clothesData,showUploadButton = true, isOwner }) => {
   const dispatch = useDispatch();
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isOpen, setIsOpen] = useState(false); // 닫힌 옷장 상태 제어
-
+  useEffect(() => {
+    console.log("🧺 clothesData in ClosetForm:", clothesData); // ✅ 카테고리별 옷들 확인
+  }, [clothesData])
+  
   const handlePreview = (product) => {
     setSelectedProduct(product);
     setPreviewOpen(true);
   };
+useEffect(() => {
+  console.log("✅ outer에 있는 이미지 URL:", clothesData?.outer?.[0]?.thumbnail);
+}, [clothesData]);
 
   const handleDelete = async (productId) => {
     if (confirm("정말 삭제하시겠습니까?")) {
@@ -104,7 +110,9 @@ const isClosetEmpty = filteredCategories.every((category) =>
                   <Image
                     src={item.thumbnail || item.url} // fallback
                     alt={item.name || category}
-                    fill
+          width={150}
+  height={150}
+                    
                     style={{ objectFit: "cover" }}
                   />
                 </div>
@@ -130,13 +138,14 @@ const isClosetEmpty = filteredCategories.every((category) =>
             {selectedProduct && (
               <div style={{ textAlign: "center" }}>
                 <Image
-                  src={selectedProduct.url}
+                  src={selectedProduct.thumbnail}
                   alt="Preview"
                   width={300}
                   height={300}
                   style={{ objectFit: "cover", marginBottom: 20 }}
                 />
-                <Title level={4}>{selectedProduct.name}</Title>
+                <Title level={4}>{selectedProduct.productName}</Title>
+                 <Paragraph > 상품명:{selectedProduct.productName}</Paragraph>
                 <Paragraph>브랜드: {selectedProduct.brand}</Paragraph>
                 <Paragraph>가격: ₩{selectedProduct.price?.toLocaleString()}</Paragraph>
                 <Button

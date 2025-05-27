@@ -22,26 +22,31 @@ const persistConfig = {
   whitelist: ["user" ,"product"], // 저장할 Redux state 설정 (예: user 정보만 저장)
 };
 
-const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 const makeStore = () => {
+  const isServer = typeof window === "undefined";
+
+  const reducer = isServer
+    ? rootReducer // 서버에서는 persist 없이
+    : persistReducer(persistConfig, rootReducer);
+
   const store = configureStore({
-    reducer: persistedReducer,
+    reducer,
     devTools: process.env.NODE_ENV !== "production",
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
         serializableCheck: {
-          ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"], // persist 관련 액션 예외 처리
+          ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
         },
       }),
   });
 
-  // 클라이언트에서만 `persistStore` 실행
-  if (typeof window !== "undefined") {
+  if (!isServer) {
     store.__PERSISTOR = persistStore(store);
   }
 
   return store;
 };
+
 
 export const wrapper = createWrapper(makeStore);

@@ -148,11 +148,19 @@ export const fetchPosts = async (lastId) => {
     const response = await axiosInstance.get('/posts', {
       params: { lastId },
     });
-    return response.data; // { posts: [...], hasMorePosts: true/false }
+    return response.data;
   } catch (error) {
-    throw new Error(error.response?.data || error.message);
+    console.error("❌ fetchPosts error:", error.response?.data || error.message);
+    return {
+      error: true,
+      message:
+        typeof error.response?.data === 'string'
+          ? error.response.data
+          : JSON.stringify(error.response?.data || error.message),
+    };
   }
 };
+
 export const throttledFetchPosts = _.throttle(fetchPosts, 5000); // 5초 제한  
  
 export const loadPosts = createAsyncThunk(
@@ -168,46 +176,126 @@ export const loadPosts = createAsyncThunk(
 );
 export const loadPost = createAsyncThunk(
   'post/loadPost',
-  async ({ id }, thunkAPI) => {
+  async ({ id:postId }, thunkAPI) => {
     try {
-      const response = await axiosInstance.get(`/post/${id}`);
-      return response.data; // 서버에서 PostDTO 하나 반환
+     // console.log('🛰️ 실제 요청할 id:', id);
+      console.log('🛰️ 실제 요청할 id:',postId); 
+      const response = await axiosInstance.get(`/post/${postId}`);
+      console.log('📦 받은 응답:', response.data);
+      return response.data;
     } catch (error) {
+      console.error("❌ 요청 실패:", error.response?.data || error.message);
       return thunkAPI.rejectWithValue(error.response?.data || '해당 게시글을 찾을 수 없습니다.');
     }
   }
 );
-
 export const addPost = createAsyncThunk(
   'post/addPost',
   async (data, thunkAPI) => {
-   
     try {
-      const thumbnail = 0;
-      const taggedProducts = data.taggedProductsByImage?.[thumbnail] || [];
-      // ✅ content와 Images만 서버에 전송 (DTO에 맞게)
+      // ✅ taggedProductsByImage → 서버에 맞게 변환
+      const taggedProducts = Object.entries(data.taggedProductsByImage || {}).map(
+        ([imageId, tags]) => {
+          const enrichedTags = tags.map((tag) => ({
+            uid: tag.uid,
+            name: tag.name || '',
+            price: tag.price || 0,
+            url: tag.url || '',
+            x: tag.x,
+            y: tag.y,
+          }));
+          return {
+            imageId,
+            tags: enrichedTags,
+          };
+        }
+      );
+
       const postData = {
         content: data.content?.trim() || '설명이 없습니다.',
-        imageUrls: uploadedImages.map((img) => img.src),
-        // Images: Array.isArray(data.Images) ? data.Images : [],
-        hashtags: extractedTags,  
-       // taggedProductsByImage: data.taggedProductsByImage || {}, // ✅ 추가됨
-       taggedProducts
+        imageUrls: data.imageUrls || [],
+        hashtags: data.hashtags || [],
+        taggedProducts: data.taggedProducts || [],  // ✅ 모든 이미지 태그 포함
       };
-      console.log('✅ 태그된 상품 목록:', taggedProducts);
+
+      console.log("🔎 전달된 imageUrls:", data.imageUrls);
+      console.log("📦 최종 서버로 보낼 postData:", postData);
+
       const response = await axiosInstance.post('/post', postData);
 
-      const newPost = response.data; // 서버 응답 구조에 맞음
+      const newPost = response.data; // 서버 응답 구조에 맞게 사용
       thunkAPI.dispatch(addPostToMe(newPost)); // ✅ 사용자 상태에도 반영
 
-      return newPost; // { id, User, content, Images, Comments, createdAt, updatedAt }
+      return newPost;
     } catch (error) {
-      console.error('❌ Error in addPost:', error.response?.data || error.message);
-      return thunkAPI.rejectWithValue(error.response?.data || error.message);
-    }
+  console.error('❌ Error in addPost:', error); // 🐛 전체 에러 로그
+  console.log('🔴 error.response:', error.response);
+  console.log('🔴 error.response?.data:', error.response?.data);
+  console.log('🔴 error.message:', error.message);
+  return thunkAPI.rejectWithValue(error.response?.data || error.message);
+}
+
   }
 );
 
+
+// export const addPost = createAsyncThunk(
+//   'post/addPost',
+//   async (data, thunkAPI) => {
+   
+//     try {
+//       const thumbnail = 0;
+//       const taggedProducts = data.taggedProductsByImage?.[thumbnail] || [];
+//       // ✅ content와 Images만 서버에 전송 (DTO에 맞게)
+//      const postData = {
+//         content: data.content?.trim() || '설명이 없습니다.',
+//         imageUrls: data.imageUrls || [], // ✅ 여기 고침
+//         hashtags: data.hashtags || [],  // ✅ 여기 고침
+//         taggedProducts,
+//       };
+//       console.log("🔎 전달된 imageUrls:", data.imageUrls);
+
+// console.log("📦 최종 서버로 보낼 postData:", postData);
+
+//       console.log('✅ 태그된 상품 목록:', taggedProducts);
+//       const response = await axiosInstance.post('/post', postData);
+
+//       const newPost = response.data; // 서버 응답 구조에 맞음
+//       thunkAPI.dispatch(addPostToMe(newPost)); // ✅ 사용자 상태에도 반영
+
+//       return newPost; // { id, User, content, Images, Comments, createdAt, updatedAt }
+//     } catch (error) {
+//       console.error('❌ Error in addPost:', error.response?.data || error.message);
+//       return thunkAPI.rejectWithValue(error.response?.data || error.message);
+//     }
+//   }
+// );
+
+// export const addPost = createAsyncThunk(
+//   'post/addPost',
+//   async (data, thunkAPI) => {
+//     try {
+//       const thumbnail = 0;
+//       const taggedProducts = data.taggedProducts || [];
+
+//       const postData = {
+//         content: data.content?.trim() || '설명이 없습니다.',
+//         imageUrls: data.imageUrls || [], // ✅ 여기 고침
+//         hashtags: data.hashtags || [],  // ✅ 여기 고침
+//         taggedProducts,
+//       };
+
+//       const response = await axiosInstance.post('/post', postData);
+//       const newPost = response.data;
+
+//       thunkAPI.dispatch(addPostToMe(newPost));
+//       return newPost;
+//     } catch (error) {
+//       console.error('❌ Error in addPost:', error.response?.data || error.message);
+//       return thunkAPI.rejectWithValue(error.response?.data || error.message);
+//     }
+//   }
+// );
 
 
 export const addComment = createAsyncThunk(
@@ -258,6 +346,9 @@ export const likePost = createAsyncThunk(
   async (postId, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.post(`/post/${postId}/like`);
+      console.log("✅ like 응답 payload:", action.payload);
+
+     
       return response.data; // 서버가 LikePostResponseDTO 반환
     } catch (error) {
       console.error('🔥 likePost error:', error);
@@ -277,19 +368,22 @@ export const unlikePost = createAsyncThunk(
     }
   }
 );
-
-
 export const uploadImage = createAsyncThunk(
   'post/uploadImage',
   async (images, thunkAPI) => {
     try {
       const formData = new FormData();
 
-      // 단일 File인지 배열인지 체크해서 FormData 구성
-      if (Array.isArray(images)) {
-        images.forEach((file) => formData.append('images', file));
+      // ✅ FileList까지 커버
+      if (Array.isArray(images) || images instanceof FileList) {
+        Array.from(images).forEach((file) => formData.append('images', file));
       } else {
         formData.append('images', images);
+      }
+
+      // ✅ 진짜 FormData 내부 확인
+      for (let [key, value] of formData.entries()) {
+        console.log('📦 FormData 확인:', key, value); // ← 이거!
       }
 
       const response = await axiosInstance.post('/post/upload/images', formData, {
@@ -298,12 +392,33 @@ export const uploadImage = createAsyncThunk(
         },
       });
 
-      return response.data; // ✅ 서버가 [{ id, src }] 배열 반환
+      return response.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(error.response?.data || error.message);
     }
   }
 );
+
+// export const uploadImage = createAsyncThunk(
+//   'post/uploadImage',
+//   async (images, thunkAPI) => {
+//     try {
+//       const formData = new FormData();
+//       if (Array.isArray(images)) {
+//         images.forEach((file) => formData.append('images', file));
+//       } else {
+//         formData.append('images', images);
+//       }
+//       const response = await axiosInstance.post('/post/upload/images', formData, {
+//         headers: { 'Content-Type': 'multipart/form-data' },
+//       });
+//       return response.data;
+//     } catch (error) {
+//       return thunkAPI.rejectWithValue(error.response?.data || error.message);
+//     }
+//   }
+// );
+
 // 파일 업로드 버튼 등에서
 //dispatch(uploadImage(selectedFiles)); // File | File[]
 
@@ -313,6 +428,8 @@ export const bookmark = createAsyncThunk(
   async (postId, thunkAPI) => {
     try {
       const response = await axiosInstance.post(`/post/${postId}/bookmark`);
+     console.log('📌 bookmark 요청 postId:', postId);
+
       return response.data; // 서버가 북마크된 게시글 객체 반환
     } catch (error) {
       console.error('❌ bookmark thunk 오류:', error.response?.data || error.message);
@@ -483,29 +600,33 @@ const postSlice = createSlice({
         draft.addPostDone = false;
         draft.addPostError = null;
       })
-      .addCase(addPost.fulfilled, (draft, action) => {
-        console.log(" Redux addPost fulfilled:", action.payload);
-      
-        draft.addPostLoading = false;
-        draft.addPostDone = true;
-        // const content = action.payload?.text?.description || action.payload?.content || " 기본값: 내용 없음";
-      
-        // console.log(" 최종 저장할 content 값:", content); //  Redux 저장 전에 확인
-        const content = action.payload?.content || "내용 없음";
-        console.log("최종 저장할 content 값:", content);
-        const products = Array.isArray(action.payload.products) ? action.payload.products : [];
+.addCase(addPost.fulfilled, (draft, action) => {
+  console.log("✅ Redux addPost fulfilled:", action.payload);
 
- 
-        // 게시물 추가 (content와 productInfo는 별도 저장)
-        draft.mainPosts.unshift({
-          ...action.payload,
-          content: content, // content는 description 또는 기본값을 사용
-          productInfo:products,
-        });
-      
-        console.log(' Updated Redux mainPosts:', draft.mainPosts);
-      })
-      
+  draft.addPostLoading = false;
+  draft.addPostDone = true;
+
+  const content = typeof action.payload?.content === 'string'
+    ? action.payload.content
+    : '내용 없음';
+
+  const products = Array.isArray(action.payload.taggedProducts || action.payload.products)
+    ? (action.payload.taggedProducts || action.payload.products)
+    : [];
+
+  const exists = draft.mainPosts.find(p => p.id === action.payload.id);
+  if (!exists && action.payload.id) {
+    draft.mainPosts.unshift({
+      ...action.payload,
+      content,
+      productInfo: products,
+    });
+  }
+
+  console.log('✅ Updated Redux mainPosts:', draft.mainPosts);
+})
+
+
   
       .addCase(addPost.rejected, (draft, action) => {
         draft.addPostLoading = false;
@@ -524,15 +645,18 @@ const postSlice = createSlice({
           return;
         }
       
-        if (!Array.isArray(post.Comments)) {
-          post.Comments = []; // 댓글 배열이 없으면 초기화
+        if (!Array.isArray(post.comments)) {
+          post.comments = []; // 댓글 배열이 없으면 초기화
         }
       
-        post.Comments.unshift(action.payload.comment);
+        post.comments.unshift(action.payload.comment);
       
         draft.addCommentLoading = false;
         draft.addCommentDone = true;
-     
+       // ✅ 불필요한 필드 정리
+  if (post.Comments) {
+    delete post.Comments;
+  }
         //console.log('Action Payload:', action.payload);
         //console.log('Main Posts:', draft.mainPosts);
         if (!post) {
@@ -601,13 +725,26 @@ const postSlice = createSlice({
         draft.uploadImagesDone = false;
         draft.uploadImagesError = null;
       })
-      .addCase(uploadImage.fulfilled, (draft, action) => {
-       // draft.imagePaths = draft.imagePaths.concat(action.payload);
-       draft.uploadedImages.push(...action.payload);
+.addCase(uploadImage.fulfilled, (draft, action) => {
+console.log('📥 uploadImage 응답 payload:', action.payload);
+
+const normalizedImages = (action.payload || []).map(img => ({
+  ...img,
+  src: img.url?.startsWith('http')
+    ? img.url
+    : `https://lindo-image-bucket.s3.ap-northeast-2.amazonaws.com${img.url}`,
+})).filter(img => img.src);
+  draft.uploadedImages.push(...normalizedImages);
+  draft.uploadImagesLoading = false;
+  draft.uploadImagesDone = true;
+})
+      // .addCase(uploadImage.fulfilled, (draft, action) => {
+      //  // draft.imagePaths = draft.imagePaths.concat(action.payload);
+      //  draft.uploadedImages.push(...action.payload);
  
-       draft.uploadImagesLoading = false;
-        draft.uploadImagesDone = true;
-      })
+      //  draft.uploadImagesLoading = false;
+      //   draft.uploadImagesDone = true;
+      // })
       .addCase(uploadImage.rejected, (draft, action) => {
         draft.uploadImagesLoading = false;
         draft.uploadImagesError = action.error;

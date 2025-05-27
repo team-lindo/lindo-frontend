@@ -320,9 +320,9 @@ export const initialUserProfile = {
     id: null,
     nickname: null,
     email: null,
-    profileImageUrl: null, 
 postsCount: 0,
-closetItems: [],     // 해당 유저의 옷장 아이템들
+closetItems: [],
+ posts: [],     // 해당 유저의 옷장 아이템들
   };
 
 const initialState = {
@@ -396,9 +396,11 @@ export const logOut = createAsyncThunk(
 
 export const follow = createAsyncThunk(
   'user/follow',
-  async (data, { rejectWithValue }) => {
+  async (userId, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.patch(`/follow/${id}`); // ✅ 수정된 경로
+        console.log("🔥 팔로우 요청", userId);
+      const response = await axiosInstance.patch(`/follow/${userId}`); // ✅ 수정된 경로
+       console.log("✅ 서버 응답:", response.data)
       return response.data; // 서버에서 UserDTO 전체 반환
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -429,15 +431,17 @@ export const signup = createAsyncThunk('user/signup', async (data, { rejectWithV
 //현재 로그인된 유저의 팔로잉 목록을 불러오는 함수
 export const loadFollowings = createAsyncThunk(
   'user/loadFollowings',
-  async ({ limit = 10, offset = 0 } = {}, { rejectWithValue }) => {
+  async ({ limit = 100, offset = 0 } = {}, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.get('/users/me/followings', {
        params: { limit, offset },
       });
+        console.log("✅ [loadFollowings] 서버 응답 데이터:", response.data);
       return response.data; // 응답이 FollowingDTO[] 형태라고 가정
     } catch (error) {
+  console.error("❌ [loadFollowings] 요청 실패:", error.response?.data || error.message);
       return rejectWithValue(error.response?.data || error.message);
-    }
+        }
   }
 );
 
@@ -461,6 +465,9 @@ export const loadFollowers = createAsyncThunk(
 export const loadMyInfo = createAsyncThunk('/user/loadMyInfo', async (_, { rejectWithValue }) => {
   try {
     const response = await axiosInstance.get('/users/me'); // ✅ 명세대로 수정
+   console.log('🛡️ accessToken:', localStorage.getItem('accessToken'));
+    console.log(" loadMyInfo 응답:", response.data);
+
     return response.data; // ✅ UserDTO 형식
   } catch (error) {
     return rejectWithValue(error.response?.data || "유저 정보 가져오기 실패");
@@ -531,19 +538,39 @@ const userSlice = createSlice({
       draft.logOutLoading = action.payload;
     },
     addPostToMe(draft, action) {
-      if (!draft.me) {
-        draft.me = { Posts: [], Followers: [], Followings: [] }; // me가 없으면 초기화
-      }
-      if (!draft.me.Posts) {
-        draft.me.Posts = []; // Posts가 없으면 초기화
-      }
-      console.log('Before Update:', [...draft.me.Posts]); // 상태 변경 전 디버깅
-      draft.me.Posts.unshift(action.payload);
-     // draft.me.Posts = [...draft.me.Posts, { id: action.payload }];
+  if (!draft.me) {
+    draft.me = { Posts: [], Followers: [], Followings: [] };
+  }
+  if (!draft.me.Posts) {
+    draft.me.Posts = [];
+  }
+
+  const exists = draft.me.Posts.find((post) => post.id === action.payload.id);
+  if (!exists) {
+    // 🧩 최소한의 정보만 저장: post.id만 저장하거나 필요한 필드만 따로 분리
+    draft.me.Posts.unshift({
+      id: action.payload.id,
+      content: action.payload.content, // ← 필요하다면 이 정도만
+    });
+  }
+
+  console.log('After Update (me.Posts):', [...draft.me.Posts]);
+},
+
+    // addPostToMe(draft, action) {
+    //   if (!draft.me) {
+    //     draft.me = { Posts: [], Followers: [], Followings: [] }; // me가 없으면 초기화
+    //   }
+    //   if (!draft.me.Posts) {
+    //     draft.me.Posts = []; // Posts가 없으면 초기화
+    //   }
+    //   console.log('Before Update:', [...draft.me.Posts]); // 상태 변경 전 디버깅
+    //   draft.me.Posts.unshift(action.payload);
+    //  // draft.me.Posts = [...draft.me.Posts, { id: action.payload }];
     
-    // draft.me.Posts.unshift({ id: action.payload, content: action.payload.content  });
-     console.log('After Update:', [...draft.me.Posts]); // 상태 변경 후 디버깅
-    },
+    // // draft.me.Posts.unshift({ id: action.payload, content: action.payload.content  });
+    //  console.log('After Update:', [...draft.me.Posts]); // 상태 변경 후 디버깅
+    // },
     //자기 게시물 삭제
     // removePostOfMe(draft, action) {
     //   draft.me.Posts = draft.me.Posts.filter((v) => v.id !== action.payload);
@@ -603,41 +630,50 @@ const userSlice = createSlice({
         draft.logOutLoading = false;
         draft.logOutError = action.payload;
       })
-      .addCase(follow.pending, (draft) => {
-        draft.followLoading = true;
-        draft.followError = null;
-        draft.followDone = false;
-      })
-      .addCase(follow.fulfilled, (draft, action) => {
-        console.log("💬 FOLLOW 응답 유저 데이터:", action.payload);
-      
-        const data = action.payload; // ✅ 먼저 선언
-      
-        draft.followLoading = false;
-      
-        if (draft.me) {
-          const alreadyFollowing = draft.me.Followings.find(
-            (u) => u.id === data.followedUser.id
-          );
-      
-          if (!alreadyFollowing) {
-            draft.me.Followings.push(data.followedUser); // ✅ followedUser만 추가
-          }
-      
-          draft.me.followingsCount = data.followingsCount;
-          draft.me.followersCount = data.followersCount;
-        }
-      
-        draft.followDone = true;
-      })
-      
-      
-      
-      .addCase(follow.rejected, (draft, action) => {
-        draft.followLoading = false;
-        draft.followError = action.payload;
-      })
-      .addCase(unfollow.pending, (draft) => {
+.addCase(follow.pending, (draft) => {
+  draft.followLoading = true;
+  draft.followError = null;
+  draft.followDone = false;
+})
+
+.addCase(follow.fulfilled, (draft, action) => {
+  console.log("💬 FOLLOW 응답 유저 데이터:", action.payload);
+
+  draft.followLoading = false;
+  draft.followDone = true;
+
+  const data = action.payload;
+
+  if (draft.me) {
+    // ⚠️ Followings 초기화 보장
+    if (!Array.isArray(draft.me.Followings)) {
+      draft.me.Followings = [];
+    }
+
+    const alreadyFollowing = draft.me.Followings.find(
+      (u) => u.id === data.followedUser?.id
+    );
+
+    if (!alreadyFollowing && data.followedUser) {
+      draft.me.Followings.push(data.followedUser); // ✅ 중복 방지
+    }
+
+    if (typeof data.followingsCount === "number") {
+      draft.me.followingsCount = data.followingsCount;
+    }
+
+    if (typeof data.followersCount === "number") {
+      draft.me.followersCount = data.followersCount;
+    }
+  }
+})
+
+.addCase(follow.rejected, (draft, action) => {
+  draft.followLoading = false;
+  draft.followError = action.payload || action.error?.message;
+  draft.followDone = false;
+})
+.addCase(unfollow.pending, (draft) => {
         draft.unfollowLoading = true;
         draft.unfollowError = null;
         draft.unfollowDone = false;
@@ -684,18 +720,34 @@ const userSlice = createSlice({
         draft.likePostError = null;
       })
 
-      .addCase(likePost.fulfilled, (draft, action) => {
-        if (!draft.likedPosts) draft.likedPosts = [];
-        draft.likedPosts.push(action.payload);// ✅ 여기 payload = { id, thumbnail, User }
+      // .addCase(likePost.fulfilled, (draft, action) => {
+      //   if (!draft.likedPosts) draft.likedPosts = [];
+      //   draft.likedPosts.push(action.payload);// ✅ 여기 payload = { id, thumbnail, User }
       
-        if (!draft.me) draft.me = { likedPosts: [] };
-        if (!draft.me.likedPosts) draft.me.likedPosts = [];
+      //   if (!draft.me) draft.me = { likedPosts: [] };
+      //   if (!draft.me.likedPosts) draft.me.likedPosts = [];
+      
+      //   const exists = draft.me.likedPosts.find((p) => p.id === action.payload.id);
+      //   if (!exists) {
+      //     draft.me.likedPosts.push(action.payload);
+      //   }
+      // })
+            .addCase(likePost.fulfilled, (draft, action) => {
+              
+              if (!draft.me) {
+          draft.me = { likedPosts: [] }; // ✅ me 자체가 없을 경우 대비
+        }
+      
+        if (!draft.me.likedPosts) {
+          draft.me.likedPosts = []; // ✅ bookmarkedPosts가 없을 경우 대비
+        }
       
         const exists = draft.me.likedPosts.find((p) => p.id === action.payload.id);
         if (!exists) {
-          draft.me.likedPosts.push(action.payload);
+          draft.me.likedPosts.unshift(action.payload); // ✅ 안전하게 추가
         }
       })
+
       .addCase(likePost.rejected, (draft, action) => {
         draft.likePostLoading = false;
         draft.likePostError = action.error;
@@ -716,6 +768,7 @@ const userSlice = createSlice({
         draft.unlikePostError = action.error;
       })
       .addCase(bookmark.fulfilled, (draft, action) => {
+         console.log('✅ 북마크 fulfilled payload:', action.payload); 
         if (!draft.me) {
           draft.me = { bookmarkedPosts: [] }; // ✅ me 자체가 없을 경우 대비
         }
@@ -760,28 +813,31 @@ const userSlice = createSlice({
        
       })
       .addCase(fetchUserProfile.fulfilled, (draft, action) => {
-        draft.profileUser = {
-          id: action.payload.id,
-          nickname: action.payload.nickname,
-          profileImageUrl: action.payload.profileImageUrl,
-          postCount: action.payload.postCount,
-        };
+        // draft.profileUser = {
+        //   id: action.payload.id,
+        //   nickname: action.payload.nickname,
+        //   postsCount: action.payload.postCount,
+        //   posts: action.payload.posts || [], 
+        // };
+        draft.profileUser = action.payload;
+
         })
       
       .addCase(fetchUserProfile.rejected, (draft, action) => {
         console.error('userProfile 로드 실패', action.payload);
       })
       .addCase(loadMyInfo.fulfilled, (draft, action) => {
-        
+          console.log("💬 loadMyInfo 응답 데이터:", action.payload);
+
         draft.me = {
           id: action.payload.id,
           nickname: action.payload.nickname,
           email: action.payload.email,
-          profileImageUrl: action.payload.profileImageUrl,
           postsCount: action.payload.postsCount ?? 0,
           followingsCount: action.payload.followingsCount ?? 0,
           followersCount: action.payload.followersCount ?? 0,
-          Posts: action.payload.Posts ?? [],
+            Posts: action.payload.posts ?? [], // ✅ 소문자 대응
+    Followings: action.payload.followings ?? [], // ✅ 소문자 대응
         };
         draft.isLoggedIn = true;
       })
@@ -792,24 +848,41 @@ const userSlice = createSlice({
         draft.error = action.payload;
       })
       .addCase(loadFollowers.fulfilled, (draft, action) => {
-        //draft.Followers = action.payload;
-        const { users, totalCount } = action.payload;
+  //       //draft.Followers = action.payload;
+  //       const { users, totalCount } = action.payload;
 
-  draft.followersList.push(...users);
-  draft.followersCount = totalCount; // ✅ totalCount 저장
-      })
+  // draft.followersList.push(...users);
+  // draft.followersCount = totalCount; // ✅ totalCount 저장
+  //      console.log("✅ [loadFollowings] 응답 payload:", action.payload);
+
+  const { users, totalCount } = action.payload;
+draft.followersList = [
+  ...new Map([...draft.followersList, ...users].map(u => [u.id, u])).values()
+];
+
+  draft.followersList = users || [];
+  draft.followersCount = totalCount ?? 0;
+  draft.loadFollowersDone = true;
+  draft.loadFollowersLoading = false
+   })
       .addCase(loadFollowers.rejected, (draft, action) => {
         console.error('팔로워 목록  불러오기 실패:', action.payload);
         draft.me = null;
       })
-      .addCase(loadFollowings.fulfilled, (draft, action) => {
-      //  draft.Followings = action.payload ;
-      const { users, totalCount } = action.payload;
+.addCase(loadFollowings.fulfilled, (draft, action) => {
+  console.log("✅ [loadFollowings] 응답 payload:", action.payload);
 
-      draft.followingsList.push(...users);
-      draft.followingsCount = totalCount; // ✅ totalCount 저장
+  const { users, totalCount } = action.payload;
+draft.followingsList = [
+  ...new Map([...draft.followingsList, ...users].map(u => [u.id, u])).values()
+];
 
-      })
+  draft.followingsList = users || [];
+  draft.followingsCount = totalCount ?? 0;
+  draft.loadFollowingsDone = true;
+  draft.loadFollowingsLoading = false;
+})
+
       .addCase(loadFollowings.rejected, (draft, action) => {
         console.error('팔로잉 목록  불러오기 실패:', action.payload);
         draft.me = null;

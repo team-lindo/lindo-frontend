@@ -20,6 +20,7 @@ const CommentForm = ({ post }) => {
   }, [addCommentDone, reset]);
 
   const onSubmit = (data) => {
+     console.log('📨 댓글 전송 데이터:', data);
     dispatch(
       addComment({
         content: data.commentText, // useForm에서 가져온 값

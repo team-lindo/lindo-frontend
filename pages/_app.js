@@ -50,31 +50,23 @@ function NodeBird({ Component, ...rest }) {
         <title>NodeBird</title>
       </Head>
 
-      <AppInitializer />
-
-      {/* {isClient && store.__PERSISTOR ? (
+      {isClient && store.__PERSISTOR ? (
         <PersistGate persistor={store.__PERSISTOR} loading={null}>
-          <Component {...props.pageProps} />
+          <>
+            <AppInitializer />
+            <Component {...props.pageProps} />
+          </>
         </PersistGate>
       ) : (
-        <Component {...props.pageProps} />
-      )} */}
-          {isClient && store.__PERSISTOR ? (
-      <PersistGate persistor={store.__PERSISTOR} loading={null}>
         <>
           <AppInitializer />
           <Component {...props.pageProps} />
         </>
-      </PersistGate>
-    ) : (
-      <>
-        <AppInitializer />
-        <Component {...props.pageProps} />
-      </>
-    )}
+      )}
     </Provider>
   );
 }
+
 
 NodeBird.propTypes = {
   Component: PropTypes.elementType.isRequired,

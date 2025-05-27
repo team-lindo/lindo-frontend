@@ -1,12 +1,11 @@
 import { useRouter } from "next/router";
 import { useEffect, useState, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { fakeApi, follow, unfollow } from "../../reducers/user";
+import { fetchUserProfile } from "../../reducers/user";
 import { loadUserPosts } from "../../reducers/post";
 import Link from "next/link";
 import AppLayout from "../../components/AppLayout";
 import { Card, Avatar, Spin } from "antd";
-import ClosetForm from "../../components/ClosetForm";
 import Image from "next/image";
 
 const UserPage = () => {
@@ -17,51 +16,36 @@ const UserPage = () => {
   const posts = useSelector((state) => state.post.posts);
   const [user, setUser] = useState(null);
   const [postsVisible, setPostsVisible] = useState(true);
-  const [closetVisible, setClosetVisible] = useState(false);
-  const [closetData, setClosetData] = useState(null);
-  const [isFollowingUser, setIsFollowingUser] = useState(false);
+const postList = user?.posts || [];
 
+  // ✅ 유저 정보 불러오기
   useEffect(() => {
-    if (me && user) {
-      const following = me.Followings?.some((f) => f.id === user.id);
-      setIsFollowingUser(following);
-    }
-  }, [me, user]);
+    if (!router.isReady || !id) return;
 
-  useEffect(() => {
-    if (!id) return;
-    const fetchUser = async () => {
-      try {
-        const res = await fakeApi.getUserById(Number(id));
-        if (res?.data) {
-          setUser(res.data);
-        } else {
-          console.warn("유저 정보를 찾을 수 없습니다.");
-          setUser(null);
-        }
-      } catch (error) {
+    dispatch(fetchUserProfile(Number(id)))
+      .unwrap()
+      .then((userData) => {
+        setUser(userData);
+      })
+      .catch((error) => {
         console.error("유저 정보 가져오기 실패:", error);
         setUser(null);
-      }
-    };
-    fetchUser();
-  }, [id]);
+      });
+  }, [router.isReady, id]);
 
-  const toggleCloset = async () => {
-    if (!closetVisible && !closetData) {
-      try {
-        const res = await fakeApi.getClosetByUserId(Number(id));
-        if (res?.data) {
-          setClosetData(res.data);
-        } else {
-          console.warn("옷장 정보 없음");
-        }
-      } catch (err) {
-        console.error("옷장 로딩 실패:", err);
-      }
+  // ✅ 게시글 불러오기
+  useEffect(() => {
+    if (user?.id) {
+      dispatch(loadUserPosts({ id: user.id }))
+        .unwrap()
+        .then((data) => {
+          console.log("✅ 게시글 응답:", data);
+        })
+        .catch((err) => {
+          console.error("❌ 게시글 불러오기 실패:", err);
+        });
     }
-    setClosetVisible((prev) => !prev);
-  };
+  }, [user?.id]);
 
   const handleTogglePosts = () => {
     const toggled = !postsVisible;
@@ -69,34 +53,6 @@ const UserPage = () => {
 
     if (toggled && posts.length === 0) {
       dispatch(loadUserPosts(user.id));
-    }
-  };
-  useEffect(() => {
-    if (user?.id) {
-      dispatch(loadUserPosts({ id: user.id }))
-        .unwrap()
-        .then((data) => {
-          console.log("✅ 게시글 응답:", data); // data = { posts: [...], hasMorePosts: true }
-        })
-        .catch((err) => {
-          console.error("❌ 게시글 불러오기 실패:", err);
-        });
-    }
-  }, [user?.id]);
-  
-  const handleFollow = async () => {
-    try {
-      await dispatch(follow(user.id));
-    } catch (err) {
-      console.error("팔로우 실패:", err);
-    }
-  };
-
-  const handleUnfollow = async () => {
-    try {
-      await dispatch(unfollow(user.id));
-    } catch (err) {
-      console.error("언팔로우 실패:", err);
     }
   };
 
@@ -130,10 +86,7 @@ const UserPage = () => {
               style={styles.clickableText}
               onClick={handleTogglePosts}
             >
-              게시물<br />{posts.length}
-            </div>,
-            <div key="closet" style={styles.clickableText} onClick={toggleCloset}>
-              옷장<br />{closetVisible ? "닫기" : "보기"}
+              게시물<br />{postList.length}
             </div>,
           ]}
         >
@@ -146,22 +99,24 @@ const UserPage = () => {
               </Link>
             }
             title={
-              <Link href={`/user/${user.id}`}>
-                <span style={{ color: "inherit" }}>{user.nickname}</span>
-              </Link>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <Link href={`/user/${user.id}`}>
+                  <span style={{ color: "inherit" }}>{user.nickname}</span>
+                </Link>
+              </div>
             }
             description={me?.id === user.id ? "방가방가" : "유저 프로필"}
           />
         </Card>
 
         {/* 게시물 썸네일 리스트 */}
-        {postsVisible && posts.length > 0 && (
+        {postsVisible && postList.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginTop: '16px' }}>
-            {posts.map((post) => (
+            {postList.map((post) => (
               <Link href={`/post/${post.id}`} key={post.id}>
                 <div style={{ width: '200px', height: '200px', position: 'relative' }}>
                   <Image
-                    src={post.thumbnail}
+                    src={post.thumbnail ||"/default-image.png"}
                     alt="썸네일"
                     fill
                     style={{ objectFit: 'cover', borderRadius: '8px' }}
@@ -169,49 +124,6 @@ const UserPage = () => {
                 </div>
               </Link>
             ))}
-          </div>
-        )}
-
-        {/* 옷장 보기 */}
-        {closetVisible && (
-          <div style={{ marginTop: "32px" }}>
-            <h3 style={{ marginBottom: "12px" }}>{user.nickname}님의 옷장</h3>
-            <ClosetForm clothes={closetData || {}} showUploadButton={false} />
-          </div>
-        )}
-
-        {/* 팔로우 / 언팔로우 */}
-        {me?.id !== user.id && (
-          <div style={{ textAlign: "center", marginTop: "16px" }}>
-            {isFollowingUser ? (
-              <button
-                onClick={handleUnfollow}
-                style={{
-                  padding: "8px 16px",
-                  background: "#fff",
-                  color: "#000",
-                  border: "1px solid #aaa",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                }}
-              >
-                언팔로우
-              </button>
-            ) : (
-              <button
-                onClick={handleFollow}
-                style={{
-                  padding: "8px 16px",
-                  background: "#1890ff",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                }}
-              >
-                팔로우
-              </button>
-            )}
           </div>
         )}
       </div>

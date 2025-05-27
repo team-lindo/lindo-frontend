@@ -38,13 +38,17 @@ const handleSubmit = async (values) => {
   setProductTags(imagesWithTags);
 
   // 상품 등록 요청
-  const result = await dispatch(addProduct(productRequest)); 
+  const result = await dispatch(addProduct(productRequest));
 
-  console.log(" 서버 응답 (ProductDTO):", result);
+  console.log("서버 응답 (ProductDTO):", result);
 
   if (result.meta.requestStatus === "fulfilled") {
-    const productResponse = result.payload; //  ProductDTO로 응답
-    message.success(`상품이 등록되었습니다! 상품번호: ${productResponse.uid}`);
+    const productResponse = result.payload;
+    const cleanUid = productResponse.uid.includes('_')
+      ? productResponse.uid.split('_')[1]
+      : productResponse.uid;
+
+    message.success(`상품이 등록되었습니다! 상품번호: ${cleanUid}`);
     router.push("/closet");
   } else {
     message.error("상품 등록 중 오류가 발생했습니다.");
@@ -117,17 +121,18 @@ const handleSubmit = async (values) => {
             )}
 
             {/* 카테고리 */}
-            <Form.Item label="카테고리" name="category" rules={[{ required: true }]}>
-              <Select placeholder="카테고리를 선택하세요" onChange={setSelectedCategory}>
-                {categories
-                  .filter((c) => c.name !== "ALL") // ALL 제외
-                  .map((cat) => (
-                    <Option key={cat.name} value={cat.name}>
-                      {cat.label}
-                    </Option>
-                  ))}
-              </Select>
-            </Form.Item>
+<Form.Item label="카테고리" name="category" rules={[{ required: true }]}>
+  <Select placeholder="카테고리를 선택하세요" onChange={setSelectedCategory}>
+    {categories
+      .filter((c) => c.name !== "ALL")
+      .map((cat) => (
+        <Select.Option key={cat.name} value={cat.name}>
+          {cat.label}
+        </Select.Option>
+      ))}
+  </Select>
+</Form.Item>
+
 
             {/* 브랜드 */}
             <Form.Item label="브랜드" name="brand" rules={[{ required: true }]}>
@@ -138,9 +143,9 @@ const handleSubmit = async (values) => {
             <Form.Item label="제품명" name="productName" rules={[{ required: true }]}>
               <Input placeholder="제품명을 입력하세요" />
             </Form.Item>
-{/* 
-            {/* 가격 
-            <Form.Item label="가격" name="price" rules={[{ required: true }]}>
+
+             
+            {/* <Form.Item label="가격" name="price" rules={[{ required: true }]}>
               <Input type="number" placeholder="가격을 입력하세요" />
             </Form.Item> */}
 

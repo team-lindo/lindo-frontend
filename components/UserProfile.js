@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/router";
 import { Card, Avatar, Button, Modal } from "antd";
 import FollowList from "./FollowList";
+import FollowingList from "./FollowingList";
 import  LoginForm from "../components/LoginForm";
 import { fakeApi,logOut,setLogOutLoading,fetchUserProfile,loadMyInfo,loadFollowers,loadFollowings} from "../reducers/user";
 import Link from "next/link";
@@ -17,55 +18,102 @@ const UserProfile = ({ userId: propUserId }) => {
   const { me, profileUser  } = useSelector((state) => state.user);
   const [userId, setUserId] = useState(null);
   //const posts = useSelector((state) => state.post.posts);
-  const user = me.id === userId ? me : profileUser;
+ // const user = me.id === userId ? me : profileUser;
+// const posts = profileUser?.posts || [];
+
+
   const followingsList = useSelector((state) => state.user.followingsList);
   const followersList = useSelector((state) => state.user.followersList);
-  const followersCount = followersList.length;
-  const followingsCount = followingsList.length;
-  const posts = user?.Posts || [];
-  console.log("✅ posts 구조 확인:", posts);
+  //const followersCount = followersList.length;
+ // const followingsCount = followingsList.length;
 
+//const isMyProfile = me?.id === userId;
+ const isMyProfile = useMemo(() => {
+    if (!me || !userId) return false;
+    return me.id === userId;
+  }, [me, userId]);
+const user = isMyProfile ? me : profileUser;
+//const posts = isMyProfile ? [] : (profileUser?.posts || []); // ✅ 수정
+//const [posts, setPosts] = useState([]);
+
+ const followingsCount = useMemo(() => {
+  return user?.followingsCount ?? user?.Followings?.length ?? followingsList?.length ?? 0;
+}, [user, followingsList]);
+
+useEffect(() => {
+  console.log("🧾 followingsList 확인:", followingsList);
+}, [followingsList]);
+ const followersCount = useMemo(() => {
+  return user?.followersCount ?? user?.Followers?.length ??followersList?.length ?? 0 ;
+}, [user, followersList]);
+
+useEffect(() => {
+  console.log("🧾 followingsList 확인:", followingsList);
+}, [followingsList]);
   const [viewedUser, setViewedUser] = useState(null);
   const [postsVisible, setPostsVisible] = useState(true);
   const [followerModalVisible, setFollowerModalVisible] = useState(false);
   const [followingModalVisible, setFollowingModalVisible] = useState(false);
   const logOutLoading = useSelector((state) => state.user.logOutLoading);
+
   useEffect(() => {
     if (!me) {
       dispatch(loadMyInfo());
     }
   }, [me, dispatch]);
-  
-  // userId 설정 (router or props)
 
+  // userId 설정 (router or props)
+useEffect(() => {
+  if (profileUser) {
+    // console.log('🐛 profileUser:', profileUser);
+    // console.log('🖼️ posts:', profileUser.posts);
+  }
+}, [profileUser]);
+//const posts = isMyProfile ? me?.posts || [] : profileUser?.posts || [];
+const posts = profileUser?.posts || [];
+ 
+// console.log('📌 postsVisible:', postsVisible);
+// console.log('📌 posts.length:', posts.length);
+// console.log("🔥 최종 렌더링할 posts:", posts);
+//console.log("🖼️ 썸네일:", posts.map(p => p.thumbnail));
+
+  //console.log("🖼️ posts:", posts);
   if (me && Array.isArray(me.Followings)) {
     console.log(me.Followings.length); // 안전하게 접근
   }
   useEffect(() => {
-    if (!userId && me && !propUserId && !router.query.id) {
-      setUserId(me.id);
-    } else if (!userId && propUserId) {
+  if (!userId) {
+    if (propUserId) {
       setUserId(propUserId);
-    } else if (!userId && router.isReady && router.query.id) {
+    } else if (router.isReady && router.query.id) {
       const id = parseInt(router.query.id, 10);
-      if (!isNaN(id)) {
-        setUserId(id);
-      }
+      if (!isNaN(id)) setUserId(id);
+    } else if (me?.id) {
+      setUserId(me.id);
     }
-  }, [userId, me, propUserId, router.isReady, router.query.id]);
+  }
+}, [userId, propUserId, router.isReady, router.query.id, me]);
+
   
   
 //fetchUserProfile
 useEffect(() => {
   if (userId && router.isReady) {
-    console.log("✅ fetchUserProfile 실행:", userId);
+    //console.log("✅ fetchUserProfile 실행:", userId);
     dispatch(fetchUserProfile(userId));
+ //   console.log('🧪 useEffect 내부:', { userId, isReady: router.isReady });
+
   }
 }, [userId, router.isReady]);
 
-useEffect(() => {
-  console.log("🧪 현재 userId:", userId);
-}, [userId]);
+// useEffect(() => {
+//   console.log("🎯 profileUser 업데이트됨:", profileUser);
+//   console.log("🧮 게시글 수:", profileUser?.posts?.length);
+// }, [profileUser]);
+
+// useEffect(() => {
+//   console.log("🧪 현재 userId:", userId);
+// }, [userId]);
 
   
   // const handleTogglePosts = () => {
@@ -108,18 +156,19 @@ useEffect(() => {
     }
   }, [followingModalVisible, dispatch]);
 
-  const isMyProfile = useMemo(() => {
-    if (!me || !userId) return false;
-    return me.id === userId;
-  }, [me, userId]);
+  // const isMyProfile = useMemo(() => {
+  //   if (!me || !userId) return false;
+  //   return me.id === userId;
+  // }, [me, userId]);
     
   if (!me) return <LoginForm />;
   if (!user) return null;
-  console.log("🔥 현재 게시글 목록:", posts);
+  //console.log("🔥 현재 게시글 목록:", posts);
+console.log("🔥 user 객체 확인:", user);
 
-  posts.forEach((post, i) => {
-    console.log(`[${i}] post.id:`, post.id, "| typeof:", typeof post.id);
-  });
+  // posts.forEach((post, i) => {
+  //  console.log(`[${i}] post.id:`, post.id, "| typeof:", typeof post.id);
+  // });
   return (
     <>
       <Card
@@ -132,7 +181,7 @@ useEffect(() => {
               style={styles.clickableText}
               onClick={handleTogglePosts}
             >
-          게시물<br />{user?.postsCount ?? 0}
+          게시물<br />{posts.length}
           </div>,
                           <div
             key="follower"
@@ -140,16 +189,21 @@ useEffect(() => {
             onClick={() => setFollowerModalVisible(true)}
           >
             팔로워<br />
-            {user?.followersCount ?? user?.Followers?.length ?? 0}
+            {user?.followersCount ?? user?.Followers?.length ??followersList?.length ?? 0 }
           </div>,
-          <div
-            key="following"
-            style={styles.clickableText}
-            onClick={() => setFollowingModalVisible(true)}
-          >
-            팔로잉<br />
-            {user?.followingsCount ?? user?.Followings?.length ?? 0}
-          </div>
+<div
+  key="following"
+  style={styles.clickableText}
+  onClick={() => setFollowingModalVisible(true)}
+>
+  팔로잉<br />
+  {
+    user?.followingsCount ??
+    user?.Followings?.length ??
+    followingsList?.length ?? 0
+  }
+</div>
+
 
               ]
             : [
@@ -208,41 +262,49 @@ useEffect(() => {
         )}
       </Card>
 
-      {postsVisible && posts.length > 0 && (
-  <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", marginTop: "16px" }}>
-   
-    {posts.map((post) => (
-      <Link href={`/post/${post.id}`} key={post.id}>
-        
-        <div
-          style={{
-            width: "200px",
-            height: "200px",
-            overflow: "hidden",
-            borderRadius: "8px",
-            display: "block",
-            position: "relative",
-          }}
-        >
-          <Image
-            src={post.thumbnail || "/default-image.png"}
-            alt="post thumbnail"
-            fill
-            style={{ objectFit: "cover", borderRadius: "8px" }}
-          />
-        </div>
-      </Link>
-      
-    ))}
+{(postsVisible || isMyProfile) && (
+  <div style={{ marginTop: "16px" }}>
+    {posts.length === 0 ? (
+      <p style={{ padding: "16px", color: "#888" }}>게시글이 없습니다.</p>
+    ) : (
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+        {posts.map((post) => (
+          <Link href={`/post/${post.id}`} key={post.id}>
+            <div
+              style={{
+                width: "200px",
+                height: "200px",
+                overflow: "hidden",
+                borderRadius: "8px",
+                display: "block",
+                position: "relative",
+              }}
+            >
+              <img
+                src={post.thumbnail || "/default-image.png"}
+                alt="post thumbnail"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  borderRadius: "8px",
+                }}
+              />
+            </div>
+          </Link>
+        ))}
+      </div>
+    )}
   </div>
 )}
+
 <Modal
   title="팔로잉 목록"
   open={followingModalVisible}
   footer={null}
   onCancel={() => setFollowingModalVisible(false)}
 >
-  <FollowList header="팔로잉" data={followingsList} totalCount={followingsCount}  />
+  <FollowingList header="팔로잉" data={followingsList} totalCount={followingsCount}  />
 </Modal>
 
 <Modal

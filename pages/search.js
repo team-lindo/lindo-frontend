@@ -9,7 +9,9 @@ import { searchItems } from '../reducers/search';
 const SearchPage = () => {
   const [searchValue, setSearchValue] = useState('');
   const dispatch = useDispatch();
-  const { result, loading } = useSelector((state) => state.search);
+  const { results, loading } = useSelector((state) => state.search);
+console.log("🔍 검색 결과:", results);
+console.log("✅ 전체 search state:", useSelector((state) => state.search));
 
   const handleSearch = (value) => {
     const trimmed = value.trim();
@@ -42,51 +44,65 @@ const SearchPage = () => {
   <div style={{ height: 100 }} />
 </Spin>
 
-      ) : result ? (
+      ) : results ? (
         <Tabs defaultActiveKey="hashtags">
-          <Tabs.TabPane tab="게시글" key="hashtags">
-            <List
-              dataSource={result.hashtags}
-              renderItem={(post) => (
-                <List.Item>
-                  <Link href={`/post/${post.id}`}>{post.content}</Link>
-                  <img
-            src={post.thumbnail}
-            alt="게시글 썸네일"
-            style={{
-              width: '100%',
-              height: '200px',
-              objectFit: 'cover',
-              borderRadius: '8px',
-              cursor: 'pointer',
-            }}
-          />
-                </List.Item>
-              )}
+<Tabs.TabPane tab="게시글" key="hashtags">
+  <List
+    dataSource={results.hashtags}
+    renderItem={(post) => (
+      <List.Item>
+        <Link href={`/post/${post.id}`}>{post.content}</Link>
+        <Link href={`/post/${post.id}`} legacyBehavior>
+          <a>
+            <img
+              src={post.thumbnail}
+              alt="게시글 썸네일"
+              style={{
+                maxWidth: '100%',
+                maxHeight: '200px',
+                objectFit: 'contain',
+                display: 'block',
+                marginTop: '8px',
+                borderRadius: '8px',
+                background: '#f5f5f5',
+              }}
             />
-          </Tabs.TabPane>
-          <Tabs.TabPane tab="상품" key="products">
-            <List
-              dataSource={result.products}
-              renderItem={(product) => (
-                <List.Item>
-                  <Link href={`/product/${product.uid}`}>{product.name} - ₩{product.price}</Link>
-                  <img
-            src={post.thumbnail}
-            alt="게시글 썸네일"
-            style={{
-              width: '100%',
-              height: '200px',
-              objectFit: 'cover',
-              borderRadius: '8px',
-              cursor: 'pointer',
-            }}
-          />
-                </List.Item>
-              )}
+          </a>
+        </Link>
+      </List.Item>
+    )}
+  />
+</Tabs.TabPane>
+
+      <Tabs.TabPane tab="상품" key="products">
+  <List
+    dataSource={results.products}
+    renderItem={(product) => (
+      <List.Item>
+        <Link href={`/product/${product.uid}`}>{product.productName}</Link>
+        <Link href={`/product/${product.uid}`} legacyBehavior>
+          <a>
+            <img
+              src={product.thumbnail}
+              alt="상품 썸네일"
+              style={{
+                maxWidth: '100%',
+                maxHeight: '200px',
+                objectFit: 'contain',
+                display: 'block',
+                marginTop: '8px',
+                borderRadius: '8px',
+                background: '#f5f5f5',
+              }}
             />
-          </Tabs.TabPane>
-          <Tabs.TabPane tab="브랜드" key="brands">
+          </a>
+        </Link>
+      </List.Item>
+    )}
+  />
+</Tabs.TabPane>
+
+          {/* <Tabs.TabPane tab="브랜드" key="brands">
             <List
               dataSource={result.brands}
               renderItem={(brand) => (
@@ -106,7 +122,7 @@ const SearchPage = () => {
                 </List.Item>
               )}
             />
-          </Tabs.TabPane>
+          </Tabs.TabPane> */}
         </Tabs>
       ) : null}
     </div>

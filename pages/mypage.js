@@ -1,46 +1,45 @@
-import { useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { useRouter } from "next/router";
-import Head from "next/head";
-import AppLayout from "../components/AppLayout";
-import { loadMyInfo } from "../reducers/user";
-import MyProfile from "../components/MyProfile"; // 나 전용 컴포넌트
+// import { useEffect } from "react";
+// import { useSelector, useDispatch } from "react-redux";
+// import { useRouter } from "next/router";
+// import Head from "next/head";
+// import AppLayout from "../components/AppLayout";
+// import { loadMyInfo } from "../reducers/user";
+// import UserProfile from "../components/UserProfile"; // ✅ 실제 존재하는 컴포넌트
 
-const MyPage = () => {
-  const dispatch = useDispatch();
-  const { me } = useSelector((state) => state.user);
-  const router = useRouter();
+// const MyPage = () => {
+//   const dispatch = useDispatch();
+//   const { me } = useSelector((state) => state.user);
+//   const router = useRouter();
 
-  useEffect(() => {
-    if (!me) {
-      dispatch(loadMyInfo());
-    }
-  }, [me]);
+//   useEffect(() => {
+//     if (!me) {
+//       dispatch(loadMyInfo());
+//     }
+//   }, [me]);
 
-  useEffect(() => {
-    if (me === null) {
-      alert("로그인이 필요합니다.");
-      router.push("/login");
-    }
-  }, [me]);
+//   useEffect(() => {
+//     if (me === null) {
+//       alert("로그인이 필요합니다.");
+//       router.push("/login");
+//     }
+//   }, [me]);
 
-  if (!me?.id) return null;
+//   if (!me?.id) return null;
 
-  return (
-    <AppLayout>
-      <Head>
-        <title>마이페이지</title>
-      </Head>
-      <MyProfile user={me} /> {/* 나 전용 컴포넌트 */}
-    </AppLayout>
-  );
-};
+//   return (
+//     <AppLayout>
+//       <Head>
+//         <title>마이페이지</title>
+//       </Head>
+//       <UserProfile user={me} /> {/* 나 전용 컴포넌트 */}
+//     </AppLayout>
+//   );
+// };
 
-export default MyPage;
+// export default MyPage;
 
 
 
-/*// pages/mypage.js
 import dynamic from 'next/dynamic';
 import { useSelector } from 'react-redux';
 import { useEffect } from 'react';
@@ -75,4 +74,3 @@ const MyPage = () => {
 };
 
 export default MyPage;
-*/

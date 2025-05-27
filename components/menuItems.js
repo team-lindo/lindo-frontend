@@ -76,7 +76,11 @@ export const getCombinedMenuItems = (pathname) => {
     },
     {
       key: "profile",
-      label: <Link href="/profile" style={isActive('/profile') ? activeStyle : {}}>마이</Link>,
+      label: <Link href="/mypage" style={isActive('/mypage') ? activeStyle : {}}>마이</Link>,
+    },
+        {
+      key: "recommend",
+      label: <Link href="/recommend" style={isActive('/recommend') ? activeStyle : {}}>팔로우 추천</Link>,
     },
   ];
 };

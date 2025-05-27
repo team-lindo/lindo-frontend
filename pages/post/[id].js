@@ -1,50 +1,42 @@
-
-
+// ✅ PostPage.js
 import { wrapper } from '../../store/configureStore';
 import { loadPost } from '../../reducers/post';
 import PostDetail from '../../components/PostDetail';
-import dynamic from 'next/dynamic';
 
-const PostDetailNoSSR = dynamic(() => import('../../components/PostDetail'), {
-  ssr: false,
-});
 const PostPage = () => {
-  return <PostDetailNoSSR  />;
+  return <PostDetail />;
 };
 
 export const getStaticPaths = async () => {
   return {
-    paths: [], // 빌드 타임에 생성할 경로가 있다면 여기에 추가
-    fallback: 'blocking', // 없는 경로는 요청 시에 생성
+    paths: [], // 동적 라우팅
+    fallback: 'blocking',
   };
 };
-//getStaticProps에서는 dispatch만 해서 서버 측에서 데이터를 미리 불러오고, 그걸로 빌드 타임에 페이지를 렌더링할 수 있도록
+
 export const getStaticProps = wrapper.getStaticProps((store) => async (context) => {
-  
-  const id = context.params?.id;
+  const idParam = context.params?.id;
+  const id = Number(idParam);
   console.log("🔥 Fetching post for id:", id);
 
-  if (!id) {
+  if (!id || isNaN(id)) {
+    console.log("❌ Invalid ID");
     return { notFound: true };
   }
 
-  // dispatch로 데이터를 미리 fetch (Thunk 기반)
-  const result = await store.dispatch(loadPost({ id }));
+  const result = await store.dispatch(loadPost( {id} ));
   console.log("📦 loadPost result =", result);
 
   if (!result.payload || !result.payload.id) {
-    console.log("✅ getStaticProps: id =", id);
-console.log("📦 loadPost result =", result);
-
-    return {
-      notFound: true,
-    };
+    console.log("❌ No post found for id:", id);
+    return { notFound: true };
   }
 
   return {
     props: {},
-    revalidate: 10, // ISR
+    revalidate: 10,
   };
 });
+
 
 export default PostPage;

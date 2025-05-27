@@ -6,7 +6,7 @@ const nextConfig = {
   //output: "export",
   staticPageGenerationTimeout: 120,
   images: {
-    domains: [],
+    domains: ['lindo-image-bucket.s3.ap-northeast-2.amazonaws.com'],
     unoptimized: true,
   },
   transpilePackages: [

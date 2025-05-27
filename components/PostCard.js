@@ -13,13 +13,20 @@ function PostCard({ post }) {
         <a style={{ display: 'block', transition: 'transform 0.3s', borderRadius: '16px' }}>
           <Card
             hoverable
-            cover={
-              <div style={{ overflow: 'hidden', borderRadius: '16px' }}>
-                <PostImages images={post.Images} 
-             //    taggedProductsByImage={post.taggedProductsByImage}
-                />
-              </div>
-            }
+cover={
+  <div style={{ overflow: 'hidden', borderRadius: '16px' }}>
+    {post.Images?.length > 0 ? (
+      <PostImages images={post.Images} />
+    ) : (
+      <img
+        src={post.thumbnail}
+        alt="썸네일"
+        style={{ width: '100%', height: 'auto', objectFit: 'cover' }}
+      />
+    )}
+  </div>
+}
+
             style={{
               borderRadius: '16px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.08)',

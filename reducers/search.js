@@ -7,8 +7,10 @@ export const searchItems = createAsyncThunk(
   'search/searchItems',
   async (keyword, thunkAPI) => {
     try {
-      const response = await axiosInstance.get(`/api/search?keyword=${encodeURIComponent(keyword)}`);
-      return response.data; // { hashtags, products, brands }
+      const response = await axiosInstance.get(`/search?keyword=${encodeURIComponent(keyword)}`);
+   console.log("🔍 응답 데이터:", response.data);
+
+      return response.data; // { hashtags, products}
     } catch (error) {
       return thunkAPI.rejectWithValue(error.response?.data || error.message);
     }
