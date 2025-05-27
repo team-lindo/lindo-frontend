@@ -732,21 +732,23 @@ const userSlice = createSlice({
       //     draft.me.likedPosts.push(action.payload);
       //   }
       // })
-            .addCase(likePost.fulfilled, (draft, action) => {
-              
-              if (!draft.me) {
-          draft.me = { likedPosts: [] }; // ✅ me 자체가 없을 경우 대비
-        }
-      
-        if (!draft.me.likedPosts) {
-          draft.me.likedPosts = []; // ✅ bookmarkedPosts가 없을 경우 대비
-        }
-      
-        const exists = draft.me.likedPosts.find((p) => p.id === action.payload.id);
-        if (!exists) {
-          draft.me.likedPosts.unshift(action.payload); // ✅ 안전하게 추가
-        }
-      })
+.addCase(likePost.fulfilled, (draft, action) => {
+  if (!draft.me) {
+    draft.me = { likedPosts: [] };
+  }
+
+  if (!draft.me.likedPosts) {
+    draft.me.likedPosts = [];
+  }
+
+  const alreadyExists = draft.me.likedPosts.some(
+    (p) => String(p.id) === String(action.payload.id)
+  );
+
+  if (!alreadyExists) {
+    draft.me.likedPosts.unshift(action.payload); // ✅ id와 thumbnail 포함된 객체 추가
+  }
+})
 
       .addCase(likePost.rejected, (draft, action) => {
         draft.likePostLoading = false;
@@ -836,9 +838,12 @@ const userSlice = createSlice({
           postsCount: action.payload.postsCount ?? 0,
           followingsCount: action.payload.followingsCount ?? 0,
           followersCount: action.payload.followersCount ?? 0,
-            Posts: action.payload.posts ?? [], // ✅ 소문자 대응
-    Followings: action.payload.followings ?? [], // ✅ 소문자 대응
-        };
+          Posts: action.payload.posts ?? [], // ✅ 소문자 대응
+          Followings: action.payload.followings ?? [], // ✅ 소문자 대응
+       Followers: action.payload.followers ?? [], 
+          bookmarkedPosts:action.payload.bookmarkedPosts ||[],
+        likedPosts: action.payload.likedPosts || [], 
+        },
         draft.isLoggedIn = true;
       })
       

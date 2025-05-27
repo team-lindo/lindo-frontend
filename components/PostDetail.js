@@ -140,13 +140,11 @@ console.log('✅ transformedPost.images:', transformedPost?.images);
   // });
   // const isLiked = me?.likedPosts?.some((liked) => liked &&  liked.id === post.id);
 
-   const isLiked = useMemo(() => {
-    if (!post) return false;
-    return (
-      me?.likedPosts?.some((p) => String(p.id) === String(post.id))
-    );
-  }, [me, post]);
-  
+const isLiked = useMemo(() => {
+  if (!post || !Array.isArray(me?.likedPosts)) return false;
+  return me.likedPosts.some((p) => String(p.id) === String(post.id));
+}, [me, post]);
+
 
   const onUnlike = useCallback(() => {
     if (!me) return alert('로그인이 필요합니다.');
@@ -188,6 +186,8 @@ console.log('✅ transformedPost.images:', transformedPost?.images);
       if (!me) return alert('로그인이 필요합니다.');
       try {
         await dispatch(removePost(postId)); // ✅ 서버 삭제 + Redux 상태 동시 처리
+        console.log('🗑️ 삭제할 postId:', postId);
+
         //삭제 메세지 추가가
       } catch (err) {
         console.error('Failed to remove post:', err);
@@ -241,6 +241,7 @@ console.log('✅ transformedPost.images:', transformedPost?.images);
   return null; // ✅ 조건문은 훅 호출 이후에 위치해야 안전
 }
 console.log('📌 현재 post:', post);
+
 //console.log("📌 taggedProducts:", post.taggedProducts);
 if (!post) return <p>게시물을 찾을 수 없습니다.</p>;
   return (
@@ -270,7 +271,8 @@ if (!post) return <p>게시물을 찾을 수 없습니다.</p>;
           {String(post?.user?.id) === String(me?.id) ? (
             <>
               {!post.BookMarkId && <Button onClick={onClickUpdate}>수정</Button>}
-              <Button danger loading={removePostLoading} onClick={() => onRemovePost(post.id)}>
+              
+              <Button danger loading={removePostLoading} onClick={() => onRemovePost(postId)}>
                 삭제
               </Button>
             </>
@@ -284,7 +286,7 @@ if (!post) return <p>게시물을 찾을 수 없습니다.</p>;
     </Popover>,
   ]}
   title={post.BookMarkId ? `${post.user?.nickname}님이 북마크하셨습니다.` : null}
-  extra={<FollowButton post={post} />}
+  extra={<FollowButton userId={post.user.id} />}
 >
   
   {/* ✅ 이미지 렌더링은 카드 내부로 이동 */}
@@ -301,7 +303,7 @@ if (!post) return <p>게시물을 찾을 수 없습니다.</p>;
       src={post.images[0]}
       alt="썸네일"
       style={{
-        width: '100%',
+        width: 'auto',
         height: 'auto',
         objectFit: 'cover',
         borderRadius: '12px',

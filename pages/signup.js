@@ -1,6 +1,6 @@
 import AppLayout from "../components/AppLayout";
 import Head from "next/head";
-import { Checkbox, Form, Input, Button, Row, Col, Typography } from "antd";
+import { message,Checkbox, Form, Input, Button, Row, Col, Typography } from "antd";
 import { useCallback, useState } from "react";
 import useInput from "../hooks/useInput";
 import dynamic from "next/dynamic";
@@ -35,7 +35,19 @@ const Signup = () => {
     setTermError(false);
   }, []);
 
-const onSubmit = useCallback(async () => {
+  // const onSubmit = useCallback(() => {
+  //   if (password !== passwordCheck) {
+  //     setPasswordError(true);
+  //     return;
+  //   }
+  //   if (!term) {
+  //     setTermError(true);
+  //     return;
+  //   }
+  //   console.log(email, nickname, password);
+  //   return dispatch(signup({ email, password, nickname }));
+  // }, [email, nickname, password, passwordCheck, term, dispatch]);
+  const onSubmit = useCallback(() => {
   if (password !== passwordCheck) {
     setPasswordError(true);
     return;
@@ -45,14 +57,15 @@ const onSubmit = useCallback(async () => {
     return;
   }
 
-  console.log(email, nickname, password);
-  try {
-    const result = await dispatch(signup({ email, password, nickname })).unwrap();
-    message.success("회원가입 성공! 로그인 페이지로 이동합니다.");
-    router.push("/login");
-  } catch (err) {
-    message.error("회원가입 실패: " + (err.message || "알 수 없는 오류"));
-  }
+  dispatch(signup({ email, password, nickname }))
+    .unwrap()
+    .then(() => {
+      alert("회원가입이 완료되었습니다!");
+      router.push("/login");
+    })
+    .catch((err) => {
+      alert("회원가입 실패: " + (err?.message || "서버 오류"));
+    });
 }, [email, nickname, password, passwordCheck, term, dispatch, router]);
 
   return (

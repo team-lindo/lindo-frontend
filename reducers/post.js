@@ -143,7 +143,9 @@ export const loadUserPosts = createAsyncThunk(
 //dispatch(loadUserPosts({ id: 3, lastId: 15 }));
 
   
-export const fetchPosts = async (lastId) => {
+export const fetchPosts = createAsyncThunk(
+   'post/fetchPosts',
+async ({lastId}, { rejectWithValue }) => {
   try {
     const response = await axiosInstance.get('/posts', {
       params: { lastId },
@@ -151,15 +153,10 @@ export const fetchPosts = async (lastId) => {
     return response.data;
   } catch (error) {
     console.error("❌ fetchPosts error:", error.response?.data || error.message);
-    return {
-      error: true,
-      message:
-        typeof error.response?.data === 'string'
-          ? error.response.data
-          : JSON.stringify(error.response?.data || error.message),
-    };
+      return rejectWithValue(error.response?.data || error.message);
+    
   }
-};
+})
 
 export const throttledFetchPosts = _.throttle(fetchPosts, 5000); // 5초 제한  
  
@@ -318,13 +315,26 @@ export const removePost = createAsyncThunk(
   'post/removePost',
   async (postId, { rejectWithValue }) => {
     try {
-      await axiosInstance.delete(`/posts/${postId}`);
-      return { postId }; // ✅ 직접 반환
-    } catch (err) {
-      return rejectWithValue(err.response?.data || err.message);
+      console.log("🗑️ 삭제 시도 게시글 ID:", postId);
+
+      const response = await axiosInstance.delete(`/posts/${postId}`);
+      console.log("✅ 게시글 삭제 성공:", response.data);
+
+      return { postId }; // 삭제 성공 시 postId만 반환
+
+    } catch (error) {
+      console.error("❌ 게시글 삭제 실패:", {
+        status: error.response?.status,
+        errorCode: error.response?.data?.errorCode,
+        errorMessage: error.response?.data?.errorMessage,
+      });
+      console.log("🧪 전체 에러 응답 객체:", error.response?.data);
+
+      return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
+
 
 
 export const updatePost = createAsyncThunk(
@@ -345,17 +355,27 @@ export const likePost = createAsyncThunk(
   'post/likePost',
   async (postId, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.post(`/post/${postId}/like`);
-      console.log("✅ like 응답 payload:", action.payload);
+      const url = `/post/${postId}/like`;
+      console.log('🔥 좋아요 요청할 postId:', postId);
+      console.log("🛰️ 요청 보낼 URL:", url);
+      console.log("🛰️ 보낼 config:", axiosInstance.defaults.headers);
 
-     
-      return response.data; // 서버가 LikePostResponseDTO 반환
+      const response = await axiosInstance.post(url);
+      console.log("✅ like 응답 payload:", response.data);
+      return response.data;
     } catch (error) {
       console.error('🔥 likePost error:', error);
+      console.error('📛 error.message:', error.message);
+      console.error('📛 error.response?.status:', error.response?.status);
+      console.error('📛 error.response?.data:', error.response?.data);
+      console.error('📛 error.config:', error.config);
+      console.error('📛 error.request:', error.request);
+
       return rejectWithValue(error.response?.data || error.message);
     }
   }
-);
+)
+
 //dispatch(likePost(123));
 export const unlikePost = createAsyncThunk(
   'post/unlikePost',
@@ -676,24 +696,34 @@ const postSlice = createSlice({
         draft.removePostError = null;
       })
       .addCase(removePost.fulfilled, (draft, action) => {
-        //console.log('Before removing post:', draft.mainPosts);
-         //console.log('After removing post:', draft.mainPosts);
-      //  me.Posts에서도 제거 (로그인 유저의 게시물 목록)
-      draft.removePostLoading = false;
-      draft.removePostDone = true;
+  const postId = String(action.payload.postId);
+  console.log("✅ 삭제 완료: ", postId);
+  console.log("🧾 삭제 전 mainPosts:", draft.mainPosts.map(p => p.id));
+  
+  draft.mainPosts = draft.mainPosts.filter((v) => String(v.id) !== postId);
+
+  console.log("🧾 삭제 후 mainPosts:", draft.mainPosts.map(p => p.id));
+})
+
+      // .addCase(removePost.fulfilled, (draft, action) => {
+      //   //console.log('Before removing post:', draft.mainPosts);
+      //    //console.log('After removing post:', draft.mainPosts);
+      // //  me.Posts에서도 제거 (로그인 유저의 게시물 목록)
+      // draft.removePostLoading = false;
+      // draft.removePostDone = true;
     
-      const postId = String(action.payload.postId);
+      // const postId = String(action.payload.postId);
     
-      if (!Array.isArray(draft.mainPosts)) {
-        draft.mainPosts = [];
-      }
+      // if (!Array.isArray(draft.mainPosts)) {
+      //   draft.mainPosts = [];
+      // }
     
-      draft.mainPosts = draft.mainPosts.filter((v) => String(v.id) !== postId);
+      // draft.mainPosts = draft.mainPosts.filter((v) => String(v.id) !== postId);
     
-      if (draft.me?.Posts) {
-        draft.me.Posts = draft.me.Posts.filter((v) => String(v.id) !== postId);
-      }
-            })
+      // if (draft.me?.Posts) {
+      //   draft.me.Posts = draft.me.Posts.filter((v) => String(v.id) !== postId);
+      // }
+      //       })
   
       .addCase(removePost.rejected, (draft, action) => {
         console.error('게시글 삭제 실패:', action.payload);

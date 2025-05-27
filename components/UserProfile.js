@@ -41,7 +41,7 @@ const user = isMyProfile ? me : profileUser;
 }, [user, followingsList]);
 
 useEffect(() => {
-  console.log("🧾 followingsList 확인:", followingsList);
+  console.log("🧾 followerList 확인:", followersList);
 }, [followingsList]);
  const followersCount = useMemo(() => {
   return user?.followersCount ?? user?.Followers?.length ??followersList?.length ?? 0 ;

@@ -159,7 +159,7 @@ const handleFiles = async (files) => {
     const newTag = {
       uid: waitingTagItem.uid,
       name: waitingTagItem.productName || waitingTagItem.name,  // 둘 중 하나 대응
-     // url: waitingTagItem.thumbnail || waitingTagItem.url,       // 둘 중 하나 대응
+      url: waitingTagItem.thumbnail || waitingTagItem.url,       // 둘 중 하나 대응
       price: waitingTagItem.price,
       x,
       y,
@@ -325,9 +325,11 @@ return (
     {currentTags.length > 0 && (
       <div style={{ marginTop: 20 }}>
         <h4 style={{ textAlign: 'center' }}>태그된 상품</h4>
+        
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
           {currentTags.map((tag) => (
             <div key={tag.uid} style={{ position: 'relative' }}>
+              
                <Image src={tag.url}  width={80} height={80} alt="태그 상품" />
               <button
                 onClick={() => removeTag(currentImage.id, tag.uid)}

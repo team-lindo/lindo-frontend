@@ -44,53 +44,53 @@ export default function BookmarkPage() {
         </div>
       ),
     },
-    {
-      key: 'item',
-      label: (
-        <span style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <ShoppingOutlined /> 아이템
-        </span>
-      ),
-      children: (
-        <div style={{ padding: '20px 0' }}>
-          {savedItems.length > 0 ? (
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '16px',
-                justifyContent: 'center',
-              }}
-            >
-              {savedItems.map((item) => (
-                <div
-                  key={item.id}
-                  style={{
-                    width: 140,
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
-                    overflow: 'hidden',
-                    textAlign: 'center',
-                    background: '#fff',
-                  }}
-                >
-                  <Image
-                    src={item.imageUrl}
-                    alt={item.name}
-                    width={200}
-                    height={300}
-                    style={{ width: '100%', height: 140, objectFit: 'cover' }}
-                  />
-                  <p style={{ margin: '10px 0', fontWeight: 500 }}>{item.name}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <Empty description="저장한 아이템이 없습니다." />
-          )}
-        </div>
-      ),
-    },
+    // {
+    //   key: 'item',
+    //   label: (
+    //     <span style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+    //       <ShoppingOutlined /> 아이템
+    //     </span>
+    //   ),
+    //   children: (
+    //     <div style={{ padding: '20px 0' }}>
+    //       {savedItems.length > 0 ? (
+    //         <div
+    //           style={{
+    //             display: 'flex',
+    //             flexWrap: 'wrap',
+    //             gap: '16px',
+    //             justifyContent: 'center',
+    //           }}
+    //         >
+    //           {savedItems.map((item) => (
+    //             <div
+    //               key={item.id}
+    //               style={{
+    //                 width: 140,
+    //                 borderRadius: '12px',
+    //                 boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
+    //                 overflow: 'hidden',
+    //                 textAlign: 'center',
+    //                 background: '#fff',
+    //               }}
+    //             >
+    //               <Image
+    //                 src={item.imageUrl}
+    //                 alt={item.name}
+    //                 width={200}
+    //                 height={300}
+    //                 style={{ width: '100%', height: 140, objectFit: 'cover' }}
+    //               />
+    //               <p style={{ margin: '10px 0', fontWeight: 500 }}>{item.name}</p>
+    //             </div>
+    //           ))}
+    //         </div>
+    //       ) : (
+    //         <Empty description="저장한 아이템이 없습니다." />
+    //       )}
+    //     </div>
+    //   ),
+    // },
     {
       key: 'likes',
       label: (

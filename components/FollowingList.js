@@ -1,10 +1,11 @@
-import { Button, Card, List } from "antd";
 import PropTypes from "prop-types";
 import { StopOutlined } from "@ant-design/icons";
 import { useMemo, useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { loadFollowings, follow, unfollow,loadMyInfo } from "../reducers/user";
+import { Button, Card, List, Avatar, Skeleton, Divider } from "antd";
 
+import Link from 'next/link';
 const FollowingList = ({ header, data = [], totalCount = 0 }) => {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
@@ -96,29 +97,44 @@ const handleLoadMore = async () => {
   );
 
   return (
-    <List
-      style={styles.list}
-      grid={{ gutter: 4, xs: 2, md: 3 }}
-      size="small"
-      header={<div>{header}</div>}
-      loadMore={loadMoreButton}
-      bordered
-      dataSource={data}
-      renderItem={(item) => (
-        <List.Item style={styles.listItem}>
-          <Card
-            actions={[
-              <StopOutlined
-                key="stop"
-                onClick={() => onFollowToggle(item.id)}
-              />,
-            ]}
-          >
-            <Card.Meta description={item.nickname} />
-          </Card>
-        </List.Item>
-      )}
-    />
+       <List
+             style={styles.list}
+             grid={{ gutter: 4, xs: 2, md: 3 }}
+             size="small"
+             header={<div>{header}</div>}
+             bordered
+            // dataSource={loadedData}
+            dataSource={data} 
+            renderItem={(item) => (
+               <List.Item style={styles.listItem} key={item.id}>
+                 <Link href={`/user/${item.id}`}>
+                   <Card
+                     hoverable
+                     onClick={(e) => e.stopPropagation()}
+                     actions={[
+                       <Button
+                         key="follow-button"
+                         type={followStatus[item.id] ? "primary" : "default"}
+                         danger={followStatus[item.id]}
+                         onClick={(e) => {
+                           e.preventDefault(); // 링크 이동 방지
+                           e.stopPropagation(); // 카드 클릭도 막기
+                           onFollowToggle(item.id);
+                         }}
+                       >
+                         {followStatus[item.id] ? "언팔로우" : "팔로우"}
+                       </Button>,
+                     ]}
+                   >
+                     <Card.Meta
+                       avatar={<Avatar src={`https://i.pravatar.cc/150?u=${item.id}`} />}
+                       title={item.nickname}
+                     />
+                   </Card>
+                 </Link>
+               </List.Item>
+             )}
+           />
   );
 };
 

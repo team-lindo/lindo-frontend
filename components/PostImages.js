@@ -35,9 +35,10 @@ const PostImages = ({ images = [], taggedProductsByImage = {} }) => {
                 src={image.src}
                 alt="게시 이미지"
                 style={{
-                  width: '100%',
+                  width: 'auto',
                   height: '100%',
                   objectFit: 'cover',
+                  borderRadius: '12px',
                   display: 'block',
                 }}
               />

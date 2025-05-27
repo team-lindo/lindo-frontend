@@ -52,17 +52,7 @@ const isClosetEmpty = filteredCategories.every((category) =>
 
   return (
     <div className="closet-wrapper">
-      {!isOpen ? (
-        <div className="closed-closet" onClick={() => setIsOpen(true)}>
-          <Image
-            src="/images/closet-closed.png"
-            alt="닫힌 옷장"
-            width={300}
-            height={400}
-            style={{ cursor: "pointer" }}
-          />
-        </div>
-      ) : (
+      
         <div className="closet-container">
           <div className="category-bar">
             {categories.map(({ name, icon: Icon }) => (
@@ -166,7 +156,7 @@ const isClosetEmpty = filteredCategories.every((category) =>
             )}
           </Modal>
         </div>
-      )}
+      
 
       <style jsx>{`
         .closet-wrapper {

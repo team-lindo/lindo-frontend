@@ -7,8 +7,8 @@ const FollowButton = ({ post, userId }) => {
   const dispatch = useDispatch();
   const { me, followLoading, unfollowLoading } = useSelector((state) => state.user);
 
-  const targetUserId = post?.User?.id ?? userId;
-
+  //const targetUserId = post?.User?.id ?? userId;
+const targetUserId = post?.User?.id ?? post?.user?.id ?? userId;
 
   const isFollowing = !!me?.Followings?.some((v) => v.id === Number(targetUserId));
 
