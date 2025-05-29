@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
-import { Input,Button, Space} from 'antd';
+import { Input,Button, Space,message} from 'antd';
 import PropTypes from 'prop-types';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
@@ -17,24 +17,42 @@ const PostCardContent = ({
   const [editText, setEditText] = useState(postData || '');
   const dispatch = useDispatch();
 
+  // const handleUpdatePost = useCallback(() => {
+  // // console.log("수정 버튼 클릭됨, editText:", editText,"postId",postId);
+  //   if (!postId) {
+  //     console.error("postId가 없습니다.");
+  //     return;
+  //   }
+  //   dispatch(updatePost({ postId: postId, content: editText })); // createAsyncThunk 사용
+  //   onChangePost(editText);
+  // }, [dispatch, editText, postId, onChangePost])
+  // ;
   const handleUpdatePost = useCallback(() => {
-  // console.log("수정 버튼 클릭됨, editText:", editText,"postId",postId);
-    if (!postId) {
-      console.error("postId가 없습니다.");
-      return;
-    }
-    dispatch(updatePost({ postId: postId, content: editText })); // createAsyncThunk 사용
-    onChangePost(editText);
-  }, [dispatch, editText, postId, onChangePost]);
-  
+  if (!postId) {
+    console.error("postId가 없습니다.");
+    return;
+  }
+
+  dispatch(updatePost({ postId, content: editText }))
+    .unwrap()
+    .then(() => {
+      message.success("수정 완료!");
+      setEditMode(false); // 수정 종료
+    })
+    .catch((err) => {
+      message.error("수정 실패");
+      console.error("수정 실패:", err);
+    });
+}, [dispatch, editText, postId]);
+
   useEffect(() => {
-  //  console.log("PostCardContent 렌더링됨 - postId:", postId);
+   console.log("PostCardContent 렌더링됨 - postId:", postId);
   }, [postId]);
   
   useEffect(() => {
     console.log("updatePostDone 변경됨:", updatePostDone);
     if (updatePostDone) {
-    //  console.log("수정 완료, onCancelUpdate 호출됨");
+     console.log("수정 완료, onCancelUpdate 호출됨");
       onCancelUpdate();
     }
   }, [updatePostDone, onCancelUpdate]);

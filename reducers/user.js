@@ -333,6 +333,7 @@ const initialState = {
   followersCount: 0,
   followingsList: [],
   followersList: [],
+  likeCount:0,
   //userProfile: initialUserProfile,
   profileUser: initialUserProfile,
   posts: [],
@@ -362,6 +363,8 @@ const initialState = {
   changeNicknameError: null,
   getPostsLoading: false,
   getPostsError: null,
+  fetchLikedPostsLoading: false,
+  fetchBookmarkedPostsLoading: false,
 };
 // https://api.lindohub.com/api/v1/app/users/login
 export const logIn = createAsyncThunk('user/logIn', async (data, { rejectWithValue }) => {
@@ -523,6 +526,30 @@ export const getPosts = createAsyncThunk(
       return response.data; // MinimalPostDTO[]
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const fetchLikedPosts = createAsyncThunk(
+  'user/fetchLikedPosts',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get('/likedposts');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data ||error.message);
+    }
+  }
+);
+
+export const fetchBookmarkedPosts = createAsyncThunk(
+  'user/fetchBookmarkedPosts',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get('/bookmarked-posts ');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data ||error.message);
     }
   }
 );
@@ -721,35 +748,29 @@ const userSlice = createSlice({
       })
 
       // .addCase(likePost.fulfilled, (draft, action) => {
-      //   if (!draft.likedPosts) draft.likedPosts = [];
-      //   draft.likedPosts.push(action.payload);// ✅ 여기 payload = { id, thumbnail, User }
+      //    console.log('✅ 북마크 fulfilled payload:', action.payload); 
+      //   if (!draft.me) {
+      //     draft.me = { likedPosts: [] }; // ✅ me 자체가 없을 경우 대비
+      //   }
       
-      //   if (!draft.me) draft.me = { likedPosts: [] };
-      //   if (!draft.me.likedPosts) draft.me.likedPosts = [];
+      //   if (!draft.me.likedPosts) {
+      //     draft.me.likedPosts = []; // ✅ bookmarkedPosts가 없을 경우 대비
+      //   }
       
       //   const exists = draft.me.likedPosts.find((p) => p.id === action.payload.id);
       //   if (!exists) {
-      //     draft.me.likedPosts.push(action.payload);
+      //     draft.me.likedPosts.unshift(action.payload); // ✅ 안전하게 추가
       //   }
       // })
-.addCase(likePost.fulfilled, (draft, action) => {
-  if (!draft.me) {
-    draft.me = { likedPosts: [] };
+      .addCase(likePost.fulfilled, (draft, action) => {
+  if (!draft.likedPosts) {
+    draft.likedPosts = [];
   }
-
-  if (!draft.me.likedPosts) {
-    draft.me.likedPosts = [];
-  }
-
-  const alreadyExists = draft.me.likedPosts.some(
-    (p) => String(p.id) === String(action.payload.id)
-  );
-
-  if (!alreadyExists) {
-    draft.me.likedPosts.unshift(action.payload); // ✅ id와 thumbnail 포함된 객체 추가
+  const exists = draft.likedPosts.some(p => p.id === action.payload.id);
+  if (!exists) {
+    draft.likedPosts.unshift(action.payload);
   }
 })
-
       .addCase(likePost.rejected, (draft, action) => {
         draft.likePostLoading = false;
         draft.likePostError = action.error;
@@ -760,34 +781,48 @@ const userSlice = createSlice({
         draft.unlikePostError = null;
       })
       .addCase(unlikePost.fulfilled, (draft, action) => {
-        const { postId } = action.payload;
-        if (!draft.me?.likedPosts) return;
-        draft.me.likedPosts = draft.me.likedPosts.filter((p) => String(p.id) !== String(postId));
+        // const { postId } = action.payload;
+        // if (!draft.me?.likedPosts) return;
+        // draft.me.likedPosts = draft.me.likedPosts.filter((p) => String(p.id) !== String(postId));
+      console.log('🗑️ [reducer] unlikePost.fulfilled postId:', action.payload);
+  draft.likedPosts = draft.likedPosts.filter(p => p.id !== action.payload);
+  console.log('🧼 [reducer] 제거 후 likedPosts:', draft.likedPosts);
+    
       })
       
       .addCase(unlikePost.rejected, (draft, action) => {
         draft.unlikePostLoading = false;
         draft.unlikePostError = action.error;
       })
+      // .addCase(bookmark.fulfilled, (draft, action) => {
+      //    console.log('✅ 북마크 fulfilled payload:', action.payload); 
+      //   if (!draft.me) {
+      //     draft.me = { bookmarkedPosts: [] }; // ✅ me 자체가 없을 경우 대비
+      //   }
+      
+      //   if (!draft.me.bookmarkedPosts) {
+      //     draft.me.bookmarkedPosts = []; // ✅ bookmarkedPosts가 없을 경우 대비
+      //   }
+      
+      //   const exists = draft.me.bookmarkedPosts.find((p) => p.id === action.payload.id);
+      //   if (!exists) {
+      //     draft.me.bookmarkedPosts.unshift(action.payload); // ✅ 안전하게 추가
+      //   }
+      // })
       .addCase(bookmark.fulfilled, (draft, action) => {
-         console.log('✅ 북마크 fulfilled payload:', action.payload); 
-        if (!draft.me) {
-          draft.me = { bookmarkedPosts: [] }; // ✅ me 자체가 없을 경우 대비
-        }
-      
-        if (!draft.me.bookmarkedPosts) {
-          draft.me.bookmarkedPosts = []; // ✅ bookmarkedPosts가 없을 경우 대비
-        }
-      
-        const exists = draft.me.bookmarkedPosts.find((p) => p.id === action.payload.id);
-        if (!exists) {
-          draft.me.bookmarkedPosts.unshift(action.payload); // ✅ 안전하게 추가
-        }
-      })
+  if (!draft.bookmarkedPosts) {
+    draft.bookmarkedPosts = [];
+  }
+  const exists = draft.bookmarkedPosts.some(p => p.id === action.payload.id);
+  if (!exists) {
+    draft.bookmarkedPosts.unshift(action.payload);
+  }
+})
+
       .addCase(unbookmark.fulfilled, (draft, action) => {
         const { postId } = action.payload;
       
-        draft.me.bookmarkedPosts = draft.me.bookmarkedPosts.filter(
+        draft.bookmarkedPosts = draft.bookmarkedPosts.filter(
           (p) => String(p.id) !== String(postId)
         )
       })
@@ -905,6 +940,27 @@ draft.followingsList = [
         draft.getPostsError = action.payload || '에러 발생';
         console.error('posts를 가져오기 실패:', action.payload);
       })  
+      .addCase(fetchLikedPosts.pending, (draft) => {
+  draft.fetchLikedPostsLoading = true;
+})
+.addCase(fetchLikedPosts.fulfilled, (draft, action) => {
+  draft.likedPosts = action.payload;
+  draft.fetchLikedPostsLoading = false;
+})
+.addCase(fetchLikedPosts.rejected, (draft) => {
+  draft.fetchLikedPostsLoading = false;
+})
+.addCase(fetchBookmarkedPosts.pending, (draft) => {
+  draft.fetchBookmarkedPostsLoading = true;
+})
+.addCase(fetchBookmarkedPosts.fulfilled, (draft, action) => {
+  draft.bookmarkedPosts = action.payload;
+  draft.fetchBookmarkedPostsLoading = false;
+})
+.addCase(fetchBookmarkedPosts.rejected, (draft) => {
+  draft.fetchBookmarkedPostsLoading = false;
+});
+
       
   },
 });

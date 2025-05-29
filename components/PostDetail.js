@@ -41,10 +41,17 @@ function PostDetail() {
   const [editMode, setEditMode] = useState(false);
   const [commentFormOpened, setCommentFormOpened] = useState(false);
 const [clientReady, setClientReady] = useState(false);
+const likedPosts = useSelector((state) => state.user.likedPosts);
+ const bookmarkedPosts = useSelector((state) => state.user.bookmarkedPosts);
 
 useEffect(() => {
   setClientReady(true);
 }, []);
+useEffect(() => {
+  if (clientReady && router.isReady && !me) {
+    router.push('/login');
+  }
+}, [clientReady, router.isReady, me, router]);
 
 const post = useMemo(() => {
   if (!id || !me) return null;
@@ -64,13 +71,8 @@ const post = useMemo(() => {
 
   return null;
 }, [id, mainPosts, me]);
-
-useEffect(() => {
-  if (clientReady && router.isReady && !me) {
-    router.push('/login');
-  }
-}, [clientReady, router.isReady, me, router]);
-
+//const [likeCount, setLikeCount] = useState(post?.likeCount || 0);
+const [likeCount, setLikeCount] = useState(0);
   useEffect(() => {
     if (!post) return;
     const alreadyInMain = mainPosts.find((p) => String(p.id) === String(post.id));
@@ -93,32 +95,10 @@ const transformedPost = useMemo(() => {
     ),
   };
 }, [post]);
-console.log('✅ transformedPost:', transformedPost);
-console.log('✅ transformedPost.images:', transformedPost?.images);
+//console.log('✅ transformedPost:', transformedPost);
+//console.log('✅ transformedPost.images:', transformedPost?.images);
 
 
-
-
-  // console.log('BookmarkOutlined:', BookOutlined); // undefined 나오면 import 잘못됨
-  // console.log('✅ PostImages:', PostImages);
-  // console.log('✅ PostCardContent:', PostCardContent);
-  // console.log('✅ AppLayout:', AppLayout);
-  // console.log('✅ CommentForm:', CommentForm);
-  // console.log('✅ FollowButton:', FollowButton);
-
-
-
-
-  // useEffect(() => {
-  //   if (id && !post) {
-  //     dispatch(loadPost({ id }));
-  //   }
-  // }, [dispatch,id, post]);
-
-  //console.log('📌 현재 post:', post);
-//   console.log('📌 post.id:', post?.id);
-//   console.log('✅ post 내용:', post);
-//   console.log('✅ 이미지 리스트:', post?.Images);
 
   const onClickUpdate = useCallback(() => setEditMode(true), []);
   const onCancelUpdate = useCallback(() => setEditMode(false), []);
@@ -140,70 +120,110 @@ console.log('✅ transformedPost.images:', transformedPost?.images);
   // });
   // const isLiked = me?.likedPosts?.some((liked) => liked &&  liked.id === post.id);
 
-const isLiked = useMemo(() => {
-  if (!post || !Array.isArray(me?.likedPosts)) return false;
-  return me.likedPosts.some((p) => String(p.id) === String(post.id));
-}, [me, post]);
+// const isLiked = useMemo(() => {
+//   if (!post || !Array.isArray(me?.likedPosts)) return false;
+//   return me.likedPosts.some((p) => String(p.id) === String(post.id));
+// }, [me, post]);
 
+// const isLiked = useMemo(
+//   () => likedPosts.some((p) => String(p.id) === String(post?.id)),
+//   [likedPosts, post]
+// );
 
-  const onUnlike = useCallback(() => {
-    if (!me) return alert('로그인이 필요합니다.');
-    dispatch(unlikePost(post.id));
-  }, [me, dispatch, post?.id]);
+  // const onUnlike = useCallback(() => {
+  //   if (!me) return alert('로그인이 필요합니다.');
+  //   dispatch(unlikePost(post.id));
+  // }, [me, dispatch, post?.id]);
 
-  const onLike = useCallback(() => {
-    if (!me) return alert('로그인이 필요합니다.');
-    if (!post || !post.content) return alert('게시글 정보가 유효하지 않습니다.');
+  // const onLike = useCallback(() => {
+  //   if (!me) return alert('로그인이 필요합니다.');
+  //   if (!post || !post.content) return alert('게시글 정보가 유효하지 않습니다.');
   
-    if (isLiked) {
-      dispatch(unlikePost(post.id)) // 해제는 id만 넘겨도 OK
-        .unwrap()
-        .then(() => message.success('좋아요에서 제거되었습니다!'))
-        .catch((err) => {
-          message.error('좋아요 해제 실패');
-          console.error(err);
-        });
-    } else {
-        dispatch(likePost(post.id))
-        .unwrap()
-        .then(() => message.success('좋아요에 추가되었습니다!'))
-        .catch((err) => {
-          message.error('좋아요 실패');
-          console.error(err);
-        });
-    }
-    console.log("🔥 likePost 요청 postId:", post?.id); 
+  //   if (isLiked) {
+  //     dispatch(unlikePost(post.id)) // 해제는 id만 넘겨도 OK
+  //       .unwrap()
+  //       .then(() => message.success('좋아요에서 제거되었습니다!'))
+  //       .catch((err) => {
+  //         message.error('좋아요 해제 실패');
+  //         console.error(err);
+  //       });
+  //   } else {
+  //       dispatch(likePost(post.id))
+  //       .unwrap()
+  //       .then(() => message.success('좋아요에 추가되었습니다!'))
+  //       .catch((err) => {
+  //         message.error('좋아요 실패');
+  //         console.error(err);
+  //       });
+  //   }
+  //   console.log("🔥 likePost 요청 postId:", post?.id); 
 
-  }, [me, dispatch, post,isLiked]);
+  // }, [me, dispatch, post,isLiked]);
+
+  //   const isLiked = useMemo(() => {
+  //   return likedPosts?.some((p) => String(p.id) === String(post?.id));
+  // }, [likedPosts, post?.id]);
+const isLiked = useMemo(() => {
+  if (!likedPosts || !post) return false;
+  return likedPosts.some((p) => String(p.id) === String(post.id));
+}, [likedPosts, post]);
+
+  const isBookmarked = useMemo(() => {
+    return bookmarkedPosts?.some((p) => String(p.id) === String(post?.id));
+  }, [bookmarkedPosts, post?.id]);
+
+
+useEffect(() => {
+  if (post?.likeCount !== undefined) {
+    console.log('🧡 useEffect로 likeCount 설정:', post.likeCount);
+    setLikeCount(post.likeCount);
+  }
+}, [post?.likeCount]);
+
+const onLike = useCallback(() => {
+  if (!me) return alert('로그인이 필요합니다.');
+  if (!post?.content) return alert('게시글 정보가 유효하지 않습니다.');
+
+  const action = isLiked ? unlikePost : likePost;
+
+  dispatch(action(post.id))
+    .unwrap()
+    .then((res) => {
+       console.log('🎯 서버 응답:', res);
+   setLikeCount(prev => prev + (isLiked ? -1 : 1)); // 임시 반영
+dispatch(action(post.id))
+  .unwrap()
+  .then(res => setLikeCount(res.likeCount)); // 서버 최종값 동기화
+
+    message.success(isLiked ? '좋아요에서 제거되었습니다!' : '좋아요에 추가되었습니다!');
+    })
+    .catch((err) => {
+      console.error('좋아요 처리 실패:', err);
+      message.error('좋아요 처리 실패');
+    });
+}, [me, post, isLiked, dispatch]);
 
 
   const onToggleComment = useCallback(() => {
     setCommentFormOpened((prev) => !prev);
   }, []);
 
-  const onRemovePost = useCallback(
-    async (postId) => {
-      if (!me) return alert('로그인이 필요합니다.');
-      try {
-        await dispatch(removePost(postId)); // ✅ 서버 삭제 + Redux 상태 동시 처리
-        console.log('🗑️ 삭제할 postId:', postId);
+const onRemovePost = useCallback(
+  async (postId) => {
+    if (!me) return alert('로그인이 필요합니다.');
+    try {
+      await dispatch(removePost(postId)).unwrap(); // 💡 unwrap으로 에러 핸들링 확실히
+      message.success('게시글이 성공적으로 삭제되었습니다!');
+      router.push(`/mypage`); // ✅ 마이페이지로 이동
+    } catch (err) {
+      console.error('Failed to remove post:', err);
+      message.error('게시글 삭제에 실패했습니다.');
+    }
+  },
+  [me, dispatch, router]
+);
 
-        //삭제 메세지 추가가
-      } catch (err) {
-        console.error('Failed to remove post:', err);
-      }
-    },
-    [me, dispatch]
-  );
   
-
-  const isBookmarked = useMemo(() => {
-    if (!post) return false;
-    return (
-      me?.bookmarkedPosts?.some((p) => String(p.id) === String(post.id))
-    );
-  }, [me, post]);
-
   const onBookMark = useCallback(() => {
     if (!me) return alert('로그인이 필요합니다.');
     if (!post || !post.content) return alert('게시글 정보가 유효하지 않습니다.');
@@ -212,10 +232,10 @@ const isLiked = useMemo(() => {
       dispatch(unbookmark(post.id)) // 해제는 id만 넘겨도 OK
         .unwrap()
         .then(() => message.success('북마크에서 제거되었습니다!'))
-        .catch((err) => {
-          message.error('북마크 해제 실패');
-          console.error(err);
-        });
+      .catch((err) => {
+        console.error('북마크 처리 실패:', err);
+        message.error('북마크 처리 실패');
+      });
     } else {
       dispatch(bookmark(post.id)) // ✅ postId 넘겨tj thunk가 생성 가능
         .unwrap()
@@ -234,13 +254,20 @@ const isLiked = useMemo(() => {
   // if (!post) return <p>게시물을 찾을 수 없습니다.</p>;
  // console.log('likedPosts:', me?.likedPosts);
   console.log('isLiked:', isLiked);
-  console.log('me.likedPosts:', me?.likedPosts);
+  console.log('likedPosts:',likedPosts);
+    console.log('isLiked:', isBookmarked);
+  console.log('likedPosts:',bookmarkedPosts);
   console.log('post.id:', post?.id);
 
  if (!clientReady || !router.isReady) {
   return null; // ✅ 조건문은 훅 호출 이후에 위치해야 안전
 }
 console.log('📌 현재 post:', post);
+//console.log('🔍 post.user:', post.user);
+console.log('🧡 현재 post.likeCount:', post?.likeCount);
+console.log('🟢 현재 likeCount state:', likeCount);
+console.log('🧪 isLiked 상태:', isLiked);
+if (!post || !likedPosts) return null;
 
 //console.log("📌 taggedProducts:", post.taggedProducts);
 if (!post) return <p>게시물을 찾을 수 없습니다.</p>;
@@ -258,11 +285,19 @@ if (!post) return <p>게시물을 찾을 수 없습니다.</p>;
     ) : (
       <BookOutlined key="bookmark" onClick={onBookMark} />
     ),
-    isLiked ? (
-      <HeartTwoTone key="heart" twoToneColor="#eb2f96" onClick={onUnlike} />
-    ) : (
-      <HeartOutlined key="heart" onClick={onLike} />
-    ),
+isLiked ? (
+  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <HeartTwoTone twoToneColor="#eb2f96" onClick={onLike} />
+    <span>{typeof likeCount === 'number' ? likeCount : 0}</span>
+  </span>
+) : (
+  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <HeartOutlined onClick={onLike} />
+    <span>{typeof likeCount === 'number' ? likeCount : 0}</span>
+
+  </span>
+),
+
     <MessageOutlined key="comment" onClick={onToggleComment} />,
     <Popover
       key="more"
@@ -272,7 +307,7 @@ if (!post) return <p>게시물을 찾을 수 없습니다.</p>;
             <>
               {!post.BookMarkId && <Button onClick={onClickUpdate}>수정</Button>}
               
-              <Button danger loading={removePostLoading} onClick={() => onRemovePost(postId)}>
+              <Button danger onClick={() => onRemovePost(post.id)}>
                 삭제
               </Button>
             </>
@@ -287,6 +322,7 @@ if (!post) return <p>게시물을 찾을 수 없습니다.</p>;
   ]}
   title={post.BookMarkId ? `${post.user?.nickname}님이 북마크하셨습니다.` : null}
   extra={<FollowButton userId={post.user.id} />}
+  
 >
   
   {/* ✅ 이미지 렌더링은 카드 내부로 이동 */}

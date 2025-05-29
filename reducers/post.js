@@ -317,7 +317,7 @@ export const removePost = createAsyncThunk(
     try {
       console.log("🗑️ 삭제 시도 게시글 ID:", postId);
 
-      const response = await axiosInstance.delete(`/posts/${postId}`);
+      const response = await axiosInstance.delete(`/post/${postId}`);
       console.log("✅ 게시글 삭제 성공:", response.data);
 
       return { postId }; // 삭제 성공 시 postId만 반환
@@ -355,26 +355,15 @@ export const likePost = createAsyncThunk(
   'post/likePost',
   async (postId, { rejectWithValue }) => {
     try {
-      const url = `/post/${postId}/like`;
-      console.log('🔥 좋아요 요청할 postId:', postId);
-      console.log("🛰️ 요청 보낼 URL:", url);
-      console.log("🛰️ 보낼 config:", axiosInstance.defaults.headers);
-
-      const response = await axiosInstance.post(url);
-      console.log("✅ like 응답 payload:", response.data);
+      const response = await axiosInstance.post(`/post/${postId}/like`);
       return response.data;
     } catch (error) {
       console.error('🔥 likePost error:', error);
-      console.error('📛 error.message:', error.message);
-      console.error('📛 error.response?.status:', error.response?.status);
-      console.error('📛 error.response?.data:', error.response?.data);
-      console.error('📛 error.config:', error.config);
-      console.error('📛 error.request:', error.request);
-
       return rejectWithValue(error.response?.data || error.message);
     }
   }
-)
+);
+
 
 //dispatch(likePost(123));
 export const unlikePost = createAsyncThunk(

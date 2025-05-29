@@ -1,4 +1,4 @@
-import { useSelector } from 'react-redux';
+import { useSelector,useDispatch } from 'react-redux';
 import AppLayout from '../components/AppLayout';
 import PostCard from '../components/PostCard';
 import { Tabs, Empty } from 'antd';
@@ -10,32 +10,45 @@ import {
 import { useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { fetchLikedPosts, fetchBookmarkedPosts } from '../reducers/user';
+
+
 export default function BookmarkPage() {
+  const dispatch = useDispatch();
   const me = useSelector((state) => state.user.me);
+   const savedItems = me?.savedItems || [];
+const likedPosts = useSelector((state) => state.user.likedPosts);
+const bookmarkedPosts = useSelector((state) => state.user.bookmarkedPosts);
   useEffect(() => {
     console.log('🧪 me 변화 감지:', me);
     console.log('🧪 bookmarkedPosts:', me?.bookmarkedPosts);
     console.log('🧪 likedPosts:', me?.likedPosts);
   }, [me]);
 
+useEffect(() => {
+  if (me) {
+    dispatch(fetchLikedPosts());
+    dispatch(fetchBookmarkedPosts());
+  }
+}, [dispatch, me]);
   if (!me) {
     return <AppLayout><p>로그인 정보를 불러오는 중입니다...</p></AppLayout>;
   }
 
-  const savedItems = me?.savedItems || [];
-  const likedPosts = me?.likedPosts || [];
-  const bookmarkedPosts = me?.bookmarkedPosts || [];
+ 
+
+
 
   const items = [
     {
       key: 'style',
       label: (
         <span style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <BookOutlined /> 스타일
+          <BookOutlined />  북마크
         </span>
       ),
       children: (
-        <div style={{ padding: '20px 0' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
           {bookmarkedPosts.length > 0 ? (
             bookmarkedPosts.map((post) => <PostCard key={post.id} post={post} />)
           ) : (
@@ -91,39 +104,39 @@ export default function BookmarkPage() {
     //     </div>
     //   ),
     // },
-    {
-      key: 'likes',
-      label: (
-        <span style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <HeartOutlined /> 좋아요
-        </span>
-      ),
-      children: (
-        <div style={{ padding: '20px 0' }}>
-{likedPosts.length > 0 ? (
-  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-    {likedPosts.map((post) => (
-      <div key={post.id}>
-        <Link href={`/post/${post.id}` } legacyBehavior>
-          <a>
-            <img
-              src={post.thumbnail || post.Images?.[0]?.src || '/default-thumb.jpg'}
-              alt="썸네일"
-              style={{ width: 200, height: 200, objectFit: 'cover' }}
-            />
-          </a>
-        </Link>
-      </div>
-    ))}
-  </div>
-) : (
-  <Empty description="좋아요한 게시글이 없습니다." />
-)}
+//     {
+//       key: 'likes',
+//       label: (
+//         <span style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+//           <HeartOutlined /> 좋아요
+//         </span>
+//       ),
+//       children: (
+//         <div style={{ padding: '20px 0' }}>
+// {likedPosts.length > 0 ? (
+//   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+//     {likedPosts.map((post) => (
+//       <div key={post.id}>
+//         <Link href={`/post/${post.id}` } legacyBehavior>
+//           <a>
+//             <img
+//               src={post.thumbnail || post.Images?.[0]?.src || '/default-thumb.jpg'}
+//               alt="썸네일"
+//               style={{ width: 200, height: 200, objectFit: 'cover' }}
+//             />
+//           </a>
+//         </Link>
+//       </div>
+//     ))}
+//   </div>
+// ) : (
+//   <Empty description="좋아요한 게시글이 없습니다." />
+// )}
 
 
-        </div>
-      ),
-    },
+//         </div>
+//       ),
+//     },
   ];
 
   return (

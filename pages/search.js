@@ -1,7 +1,7 @@
 import Head from 'next/head';
-import { List, Input, Tabs, Spin, message } from 'antd';
+import { Row,Col,List, Input, Tabs, Spin, message } from 'antd';
 import Link from "next/link";
-import { LeftOutlined } from '@ant-design/icons';
+import { SearchOutlined,LeftOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { searchItems } from '../reducers/search';
@@ -43,87 +43,62 @@ console.log("✅ 전체 search state:", useSelector((state) => state.search));
         <Spin tip="로딩 중입니다." spinning={true}>
   <div style={{ height: 100 }} />
 </Spin>
-
+) : !searchValue ? (
+  <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
+    <SearchOutlined style={{ fontSize: 48, marginBottom: 16 }} />
+    <p>찾고 싶은 스타일, 아이템 키워드를 입력해보세요.</p>
+  </div>
       ) : results ? (
-        <Tabs defaultActiveKey="hashtags">
-<Tabs.TabPane tab="게시글" key="hashtags">
-  <List
-    dataSource={results.hashtags}
-    renderItem={(post) => (
-      <List.Item>
-        <Link href={`/post/${post.id}`}>{post.content}</Link>
-        <Link href={`/post/${post.id}`} legacyBehavior>
-          <a>
-            <img
-              src={post.thumbnail}
-              alt="게시글 썸네일"
-              style={{
-                maxWidth: '100%',
-                maxHeight: '200px',
-                objectFit: 'contain',
-                display: 'block',
-                marginTop: '8px',
-                borderRadius: '8px',
-                background: '#f5f5f5',
-              }}
-            />
-          </a>
-        </Link>
-      </List.Item>
-    )}
-  />
-</Tabs.TabPane>
+   <Tabs defaultActiveKey="hashtags">
+  <Tabs.TabPane tab="게시글" key="hashtags">
+    <Row gutter={[16, 16]}>
+      {results?.hashtags?.map((post) => (
+        <Col key={post.id} xs={12} sm={8} md={6}>
+          <Link href={`/post/${post.id}`} legacyBehavior>
+            <a>
+              <img
+                src={post.thumbnail}
+                alt="게시글 썸네일"
+                style={{
+                  width: '100%',
+                  height: '200px',
+                  objectFit: 'cover',
+                  borderRadius: '8px',
+                  background: '#f5f5f5',
+                }}
+              />
+            </a>
+          </Link>
+        </Col>
+      ))}
+    </Row>
+  </Tabs.TabPane>
 
-      <Tabs.TabPane tab="상품" key="products">
-  <List
-    dataSource={results.products}
-    renderItem={(product) => (
-      <List.Item>
-        <Link href={`/product/${product.uid}`}>{product.productName}</Link>
-        <Link href={`/product/${product.uid}`} legacyBehavior>
-          <a>
-            <img
-              src={product.thumbnail}
-              alt="상품 썸네일"
-              style={{
-                maxWidth: '100%',
-                maxHeight: '200px',
-                objectFit: 'contain',
-                display: 'block',
-                marginTop: '8px',
-                borderRadius: '8px',
-                background: '#f5f5f5',
-              }}
-            />
-          </a>
-        </Link>
-      </List.Item>
-    )}
-  />
-</Tabs.TabPane>
+  <Tabs.TabPane tab="상품" key="products">
+    <Row gutter={[16, 16]}>
+      {results?.products?.map((product) => (
+        <Col key={product.uid} xs={12} sm={8} md={6}>
+          <Link href={`/product/${product.uid}`} legacyBehavior>
+            <a>
+              <img
+                src={product.thumbnail}
+                alt="상품 썸네일"
+                style={{
+                  width: '100%',
+                  height: '200px',
+                  objectFit: 'cover',
+                  borderRadius: '8px',
+                  background: '#f5f5f5',
+                }}
+              />
+            </a>
+          </Link>
+        </Col>
+      ))}
+    </Row>
+  </Tabs.TabPane>
+</Tabs>
 
-          {/* <Tabs.TabPane tab="브랜드" key="brands">
-            <List
-              dataSource={result.brands}
-              renderItem={(brand) => (
-                <List.Item>
-                     <Link href={`/product/${product.uid}`}>{brand}</Link>
-                  <img
-            src={post.thumbnail}
-            alt="게시글 썸네일"
-            style={{
-              width: '100%',
-              height: '200px',
-              objectFit: 'cover',
-              borderRadius: '8px',
-              cursor: 'pointer',
-            }}
-          />
-                </List.Item>
-              )}
-            />
-          </Tabs.TabPane> */}
-        </Tabs>
       ) : null}
     </div>
   </>
