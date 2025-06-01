@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/router";
-import { Card, Avatar, Button, Modal } from "antd";
+import { Card, Avatar, Button, Modal,Affix ,Row, Col } from "antd";
 import FollowList from "./FollowList";
 import FollowingList from "./FollowingList";
 import  LoginForm from "../components/LoginForm";
@@ -101,7 +101,7 @@ useEffect(() => {
   if (userId && router.isReady) {
     //console.log("✅ fetchUserProfile 실행:", userId);
     dispatch(fetchUserProfile(userId));
- //   console.log('🧪 useEffect 내부:', { userId, isReady: router.isReady });
+   console.log('🧪 useEffect 내부:', { userId, isReady: router.isReady });
 
   }
 }, [userId, router.isReady]);
@@ -171,6 +171,7 @@ console.log("🔥 user 객체 확인:", user);
   // });
   return (
     <>
+      <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "0 16px" }}>
       <Card
         style={styles.cardContainer}
         actions={
@@ -249,14 +250,12 @@ console.log("🔥 user 객체 확인:", user);
             로그아웃
           </Button>
           <div style={{ textAlign: "center", marginLeft: "10px" }}>
-          <Button
-            icon={<UploadOutlined />}
-            onClick={() => Router.push("/postupload")}
-            type="primary"
-            style={styles.button}
-            >
-            게시글 업로드
-          </Button>
+<Affix offsetTop={0}>
+  <div style={{ background: '#fff', padding: '8px 16px', display: 'flex', justifyContent: 'flex-end' }}>
+    <Button icon={<UploadOutlined />} onClick={() => Router.push('/postupload')}> 게시글 업로드</Button>
+  </div>
+</Affix>
+
           </div>
           </>
         )}
@@ -267,33 +266,41 @@ console.log("🔥 user 객체 확인:", user);
     {posts.length === 0 ? (
       <p style={{ padding: "16px", color: "#888" }}>게시글이 없습니다.</p>
     ) : (
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-        {posts.map((post) => (
-          <Link href={`/post/${post.id}`} key={post.id}>
-            <div
-              style={{
-                width: "200px",
-                height: "200px",
-                overflow: "hidden",
-                borderRadius: "8px",
-                display: "block",
-                position: "relative",
-              }}
-            >
-              <img
-                src={post.thumbnail || "/default-image.png"}
-                alt="post thumbnail"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  borderRadius: "8px",
-                }}
-              />
-            </div>
-          </Link>
-        ))}
-      </div>
+<Row gutter={[16, 16]}>
+  {posts.map((post) => (
+    <Col key={post.id} xs={12} sm={8} md={6}>
+      <Link href={`/post/${post.id}`} legacyBehavior>
+        <a
+          style={{
+            display: "block",
+            position: "relative",
+            width: "100%",
+            paddingTop: "100%", // ✅ 정사각형 비율 유지
+            background: "#f5f5f5",
+            borderRadius: "8px",
+            overflow: "hidden",
+            border: "1px solid #eee",
+          }}
+        >
+          <img
+            src={post.thumbnail || "/default-image.png"}
+            alt="post thumbnail"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "contain", // ✅ 이미지 전체 보이기
+            }}
+          />
+        </a>
+      </Link>
+    </Col>
+  ))}
+</Row>
+
+
     )}
   </div>
 )}
@@ -315,7 +322,7 @@ console.log("🔥 user 객체 확인:", user);
 >
   <FollowList header="팔로워" data={followersList} totalCount={followersCount}  />
 </Modal>
-
+</div>
     </>
   );
 };

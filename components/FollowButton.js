@@ -8,19 +8,25 @@ const FollowButton = ({ post, userId }) => {
   const { me, followLoading, unfollowLoading } = useSelector((state) => state.user);
 
   //const targetUserId = post?.User?.id ?? userId;
-const targetUserId = post?.User?.id ?? post?.user?.id ?? userId;
+//const targetUserId = post?.User?.id ?? post?.user?.id ?? userId;
+const targetUserId = Number(post?.User?.id ?? post?.user?.id ?? userId);
 
-  const isFollowing = !!me?.Followings?.some((v) => v.id === Number(targetUserId));
+  //const isFollowing = !!me?.Followings?.some((v) => v.id === Number(targetUserId));
+const isFollowing = !!me?.Followings?.some((v) => Number(v.id) === targetUserId);
 
+console.log('targetUserId:', targetUserId);
+console.log('me.Followings:', me.Followings);
+console.log('isFollowing:', isFollowing);
 
   const onClickButton = useCallback(() => {
+      console.log("🔥 FollowButton 클릭됨 - 현재 isFollowing:", isFollowing);
     if (isFollowing) {
       dispatch(unfollow(targetUserId));
     } else {
       dispatch(follow(targetUserId));
     }
   }, [isFollowing, dispatch, targetUserId]);
-  // ⚠️ 필수값 없으면 렌더링 중단 (여기서 예외 차단)
+  //  필수값 없으면 렌더링 중단 (여기서 예외 차단)
   if (!me || !targetUserId || me.id === Number(targetUserId)) {
     return null;
   }

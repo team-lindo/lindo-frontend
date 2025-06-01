@@ -401,20 +401,29 @@ export const follow = createAsyncThunk(
   'user/follow',
   async (userId, { rejectWithValue }) => {
     try {
-        console.log("🔥 팔로우 요청", userId);
-      const response = await axiosInstance.patch(`/follow/${userId}`); // ✅ 수정된 경로
-       console.log("✅ 서버 응답:", response.data)
-      return response.data; // 서버에서 UserDTO 전체 반환
+      console.log("🔥 팔로우 요청", userId);
+      const response = await axiosInstance.patch(`/follow/${userId}`);
+      console.log("✅ 서버 응답:", response.data);
+      return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      const status = error.response?.status;
+      const data = error.response?.data;
+
+      // ✅ 409 Conflict이면 이미 팔로우 상태라 간주하고, 강제로 성공처럼 처리
+      if (status === 500 && data?.followedUser) {
+        console.warn("⚠️ 이미 팔로우된 사용자, 강제 fulfilled 처리");
+        return data;
+      }
+
+      return rejectWithValue(data || error.message);
     }
   }
 );
 
 
-export const unfollow = createAsyncThunk('user/unfollow', async (data, { rejectWithValue }) => {
+export const unfollow = createAsyncThunk('user/unfollow', async (userId,  { rejectWithValue }) => {
   try {
-    const response = await axiosInstance.delete(`/follow/${id}`);
+    const response = await axiosInstance.delete(`/follow/${userId}`);
     return response.data; // ✅ { id: number } 형태로 반환
   } catch (error) {
     return rejectWithValue(error.response?.data || error.message);
@@ -663,37 +672,71 @@ const userSlice = createSlice({
   draft.followDone = false;
 })
 
-.addCase(follow.fulfilled, (draft, action) => {
-  console.log("💬 FOLLOW 응답 유저 데이터:", action.payload);
-
-  draft.followLoading = false;
-  draft.followDone = true;
-
+.addCase(follow.fulfilled, (state, action) => {
+  console.log("✅ follow.fulfilled 실행됨:", action.payload);
   const data = action.payload;
 
-  if (draft.me) {
-    // ⚠️ Followings 초기화 보장
-    if (!Array.isArray(draft.me.Followings)) {
-      draft.me.Followings = [];
-    }
-
-    const alreadyFollowing = draft.me.Followings.find(
-      (u) => u.id === data.followedUser?.id
-    );
-
-    if (!alreadyFollowing && data.followedUser) {
-      draft.me.Followings.push(data.followedUser); // ✅ 중복 방지
-    }
-
-    if (typeof data.followingsCount === "number") {
-      draft.me.followingsCount = data.followingsCount;
-    }
-
-    if (typeof data.followersCount === "number") {
-      draft.me.followersCount = data.followersCount;
-    }
+  const followedUser = data.followedUser;
+  if (!followedUser) {
+    console.warn("⚠️ follow 응답에 followedUser 없음");
+    return;
   }
+
+  // Followings 초기화 확인
+  if (!Array.isArray(state.me.Followings)) {
+    state.me.Followings = [];
+  }
+
+  const alreadyFollowing = state.me.Followings.find(
+    (user) => Number(user.id) === Number(followedUser.id)
+  );
+
+  if (!alreadyFollowing) {
+    state.me.Followings.push(followedUser);
+    console.log("✅ Followings에 추가됨:", followedUser);
+  }
+
+  state.me.followingsCount = data.followingsCount ?? state.me.followingsCount;
+  state.me.followersCount = data.followersCount ?? state.me.followersCount;
+  state.followLoading = false;
+  state.followDone = true;
 })
+
+// .addCase(follow.fulfilled, (draft, action) => {
+//   console.log("💬 FOLLOW 응답 유저 데이터:", action.payload);
+
+//   draft.followLoading = false;
+//   draft.followDone = true;
+
+//   const data = action.payload;
+//   const followedUser = data.followedUser;
+
+//   if (draft.me) {
+//     if (!Array.isArray(draft.me.Followings)) {
+//       draft.me.Followings = [];
+//     }
+
+//     console.log("✅ 현재 me.Followings 목록:", draft.me.Followings.map((v) => v.id));
+//     console.log("✅ 추가 대상 followedUser.id:", followedUser?.id);
+
+//     const alreadyFollowing = draft.me.Followings.find(
+//       (u) => Number(u.id) === Number(followedUser?.id)
+//     );
+
+//     if (!alreadyFollowing && followedUser) {
+//       draft.me.Followings.push(followedUser);
+//       console.log("✅ Followings에 추가 완료:", followedUser);
+//     }
+
+//     if (typeof data.followingsCount === "number") {
+//       draft.me.followingsCount = data.followingsCount;
+//     }
+
+//     if (typeof data.followersCount === "number") {
+//       draft.me.followersCount = data.followersCount;
+//     }
+//   }
+// })
 
 .addCase(follow.rejected, (draft, action) => {
   draft.followLoading = false;
@@ -705,24 +748,35 @@ const userSlice = createSlice({
         draft.unfollowError = null;
         draft.unfollowDone = false;
       })
-      .addCase(unfollow.fulfilled, (draft, action) => {
-        const data = action.payload;
-      
-        draft.unfollowLoading = false;
-      
-        if (draft.me) {
-          // 1. Followings 배열에서 해당 유저 제거
-          draft.me.Followings = draft.me.Followings.filter(
-            (v) => v.id !== data.unfollowedUserId
-          );
-      
-          // 2. 최신 카운트 값 반영
-          draft.me.followingsCount = data.followingsCount;
-          draft.me.followersCount = data.followersCount;
-        }
-      
-        draft.unfollowDone = true;
-      })
+.addCase(unfollow.fulfilled, (draft, action) => {
+  const data = action.payload;
+  console.log("✅ unfollow.fulfilled 실행됨:", data);
+
+  draft.unfollowLoading = false;
+
+  if (draft.me) {
+    if (!Array.isArray(draft.me.Followings)) {
+      draft.me.Followings = [];
+    }
+
+    // ✅ 올바른 필드 사용
+    draft.me.Followings = draft.me.Followings.filter(
+      (v) => Number(v.id) !== Number(data.unfollowedUserId)
+    );
+
+    draft.me.followingsCount =
+      typeof data.followingsCount === "number"
+        ? data.followingsCount
+        : draft.me.followingsCount;
+
+    draft.me.followersCount =
+      typeof data.followersCount === "number"
+        ? data.followersCount
+        : draft.me.followersCount;
+  }
+
+  draft.unfollowDone = true;
+})
       
       .addCase(unfollow.rejected, (draft, action) => {
         draft.unfollowLoading = false;

@@ -5,7 +5,7 @@ import FollowButton from "../components/FollowButton";
 
 // ✅ 더미 데이터로 직접 구성
 const recommendedUsers = [
-  { id: 5, nickname: "test1", email: "test1@example.com" },
+ // { id: 5, nickname: "test1", email: "test1@example.com" },
 //   { id: 3, nickname: "test2", email: "test2@example.com" },
 //   { id: 4, nickname: "test3", email: "test3@example.com" },
   // { id: 8, nickname: "test8", email: "test48example.com" },

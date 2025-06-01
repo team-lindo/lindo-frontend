@@ -4,72 +4,70 @@ import { useMemo, useState, useEffect } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import Link from "next/link";
 import { useDispatch } from 'react-redux';
-import { loadFollowers, follow, unfollow } from '../reducers/user'
-//팔로워워
-const FollowList = ({ header, data , totalCount = 0}) => {
-  //<FollowList header="팔로워" data={followersList} totalCount={followersCount} />
+import { loadFollowers, follow, unfollow } from '../reducers/user';
 
+const FollowList = ({ header, data, totalCount = 0 }) => {
+  const dispatch = useDispatch();
+
+  const [loadedData, setLoadedData] = useState(data);
+  const [loading, setLoading] = useState(false);
+
+  // follow 상태 관리
   const [followStatus, setFollowStatus] = useState(
-    data.reduce((acc, user) => {
-      acc[user.id] = true;
+    () => data.reduce((acc, user) => {
+      if (user?.id) acc[user.id] = true;
       return acc;
     }, {})
   );
-  const dispatch = useDispatch();
-
-  const [loading, setLoading] = useState(false);
-  const [loadedData, setLoadedData] = useState(data);
 
   useEffect(() => {
     setFollowStatus(
-      data.reduce((acc, user) => {
-        acc[user.id] = true;
+      loadedData.reduce((acc, user) => {
+        if (user?.id) acc[user.id] = true;
         return acc;
       }, {})
     );
-  }, [data]);
-  
+  }, [loadedData]);
 
-  const [page, setPage] = useState(1);
-  
-const loadMoreData = () => {
-  if (loading) return;
-  setLoading(true);
-  dispatch(loadFollowers({ offset: loadedData.length }))
-    .then((res) => {
-      if (res.payload) {
-        setLoadedData((prev) => {
-          const combined = [...prev, ...res.payload];
+  const loadMoreData = () => {
+    if (loading || loadedData.length >= totalCount) return;
+    setLoading(true);
+
+    dispatch(loadFollowers({ offset: loadedData.length }))
+      .then((res) => {
+        const users = res.payload?.users;
+        if (Array.isArray(users)) {
+          const newCombined = [...loadedData, ...users];
           const uniqueMap = new Map();
-          combined.forEach(user => {
-            uniqueMap.set(user.id, user);
-          });
-          return Array.from(uniqueMap.values());
-        });
-      }
-      setLoading(false); // ✅ 로딩 종료 위치도 여기로
-    })
-    .catch((err) => {
-      console.error("❌ 팔로워 불러오기 실패:", err);
-      setLoading(false);
-    });
-};
-
-  
+          newCombined.forEach(user => uniqueMap.set(user.id, user));
+          const uniqueUsers = Array.from(uniqueMap.values());
+          setLoadedData(uniqueUsers);
+        } else {
+          console.warn("응답에 users 배열이 없습니다:", res.payload);
+        }
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("❌ 팔로워 불러오기 실패:", err);
+        setLoading(false);
+      });
+  };
 
   const onFollowToggle = async (id) => {
     const isCurrentlyFollowing = followStatus[id];
-  
-    if (isCurrentlyFollowing) {
-      await dispatch(unfollow(id)).unwrap();
-    } else {
-      await dispatch(follow(id)).unwrap();
+    try {
+      if (isCurrentlyFollowing) {
+        await dispatch(unfollow(id)).unwrap();
+      } else {
+        await dispatch(follow(id)).unwrap();
+      }
+      setFollowStatus((prev) => ({
+        ...prev,
+        [id]: !prev[id],
+      }));
+    } catch (err) {
+      console.error("❌ 팔로우 토글 실패:", err);
     }
-  
-    setFollowStatus((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
   };
 
   const styles = useMemo(
@@ -93,7 +91,7 @@ const loadMoreData = () => {
       <InfiniteScroll
         dataLength={loadedData.length}
         next={loadMoreData}
-        hasMore={loadedData.length <  totalCount}
+        hasMore={loadedData.length < totalCount}
         loader={<Skeleton avatar paragraph={{ rows: 1 }} active />}
         endMessage={<Divider plain>더 이상 데이터가 없습니다.</Divider>}
         scrollableTarget="scrollableDiv"
@@ -105,35 +103,42 @@ const loadMoreData = () => {
           header={<div>{header}</div>}
           bordered
           dataSource={loadedData}
-          renderItem={(item) => (
-            <List.Item style={styles.listItem} key={item.id}>
-              <Link href={`/user/${item.id}`}>
-                <Card
-                  hoverable
-                  onClick={(e) => e.stopPropagation()}
-                  actions={[
-                    <Button
-                      key="follow-button"
-                      type={followStatus[item.id] ? "primary" : "default"}
-                      danger={followStatus[item.id]}
-                      onClick={(e) => {
-                        e.preventDefault(); // 링크 이동 방지
-                        e.stopPropagation(); // 카드 클릭도 막기
-                        onFollowToggle(item.id);
-                      }}
-                    >
-                      {followStatus[item.id] ? "언팔로우" : "팔로우"}
-                    </Button>,
-                  ]}
-                >
-                  <Card.Meta
-                    avatar={<Avatar src={`https://i.pravatar.cc/150?u=${item.id}`} />}
-                    title={item.nickname}
-                  />
-                </Card>
-              </Link>
-            </List.Item>
-          )}
+          renderItem={(item) => {
+            const userId = item.id;
+            const isFollowing = followStatus[userId];
+
+            if (!userId) return null;
+
+            return (
+              <List.Item style={styles.listItem} key={userId}>
+                <Link href={`/user/${userId}`}>
+                  <Card
+                    hoverable
+                    onClick={(e) => e.stopPropagation()}
+                    actions={[
+                      <Button
+                        key="follow-button"
+                        type={isFollowing ? "primary" : "default"}
+                        danger={isFollowing}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onFollowToggle(userId);
+                        }}
+                      >
+                        {isFollowing ? "언팔로우" : "팔로우"}
+                      </Button>,
+                    ]}
+                  >
+                    <Card.Meta
+                      avatar={<Avatar src={`https://i.pravatar.cc/150?u=${userId}`} />}
+                      title={item.nickname}
+                    />
+                  </Card>
+                </Link>
+              </List.Item>
+            );
+          }}
         />
       </InfiniteScroll>
     </div>
